@@ -182,10 +182,6 @@ async def lifespan(app: FastAPI):
     await init_db(db_pool)
 
     async with db_pool.acquire() as conn:
-        await conn.execute(
-            "INSERT INTO boats (name, mmsi, color) VALUES ($1, $2, $3) ON CONFLICT (mmsi) DO NOTHING",
-            "San Diego Boat", "338234916", "#e74c3c",
-        )
         rows = await conn.fetch("SELECT mmsi FROM boats WHERE active = true")
         tracked_mmsis = {row["mmsi"] for row in rows}
 
