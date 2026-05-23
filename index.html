@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIS Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 12px 20px;
+      background: #1a1d27;
+      border-bottom: 1px solid #2a2d3a;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    header h1 span {
+      color: #4a9eff;
+    }
+
+    #status {
+      margin-left: auto;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #888;
+    }
+
+    #status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #444;
+    }
+
+    #status-dot.live { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+    #status-dot.error { background: #e74c3c; }
+
+    #map {
+      flex: 1;
+    }
+
+    #sidebar {
+      position: absolute;
+      top: 70px;
+      right: 16px;
+      z-index: 1000;
+      background: #1a1d27ee;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      width: 220px;
+      backdrop-filter: blur(8px);
+    }
+
+    #sidebar h2 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .boat-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 4px;
+    }
+
+    .boat-card:hover { background: #2a2d3a; }
+
+    .boat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .boat-info { flex: 1; min-width: 0; }
+
+    .boat-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .boat-mmsi {
+      font-size: 11px;
+      color: #666;
+      margin-top: 1px;
+    }
+
+    .boat-speed {
+      font-size: 12px;
+      color: #aaa;
+      text-align: right;
+    }
+
+    #no-boats {
+      font-size: 13px;
+      color: #555;
+      text-align: center;
+      padding: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AIS <span>Tracker</span></h1>
+    <div id="status">
+      <div id="status-dot"></div>
+      <span id="status-text">Loading...</span>
+    </div>
+  </header>
+
+  <div id="map"></div>
+
+  <div id="sidebar">
+    <h2>Vessels</h2>
+    <div id="boat-list"><div id="no-boats">No vessels tracked</div></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const SAN_DIEGO = [32.7, -117.2];
+
+    const map = L.map("map", {
+      center: SAN_DIEGO,
+      zoom: 11,
+      zoomControl: true,
+    });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // State
+    const boatLayers = {};  // mmsi -> { polyline, marker }
+
+    function setStatus(state, text) {
+      const dot = document.getElementById("status-dot");
+      dot.className = "";
+      if (state) dot.classList.add(state);
+      document.getElementById("status-text").textContent = text;
+    }
+
+    function makeBoatIcon(color) {
+      return L.divIcon({
+        className: "",
+        html: `<svg width="18" height="18" viewBox="0 0 18 18">
+          <circle cx="9" cy="9" r="7" fill="${color}" stroke="#fff" stroke-width="2"/>
+          <circle cx="9" cy="9" r="3" fill="#fff" opacity="0.7"/>
+        </svg>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+    }
+
+    function renderBoatCard(boat, latestPos) {
+      const card = document.createElement("div");
+      card.className = "boat-card";
+      card.dataset.mmsi = boat.mmsi;
+
+      const speedText = latestPos?.speed != null
+        ? `${latestPos.speed.toFixed(1)} kn`
+        : "—";
+
+      card.innerHTML = `
+        <div class="boat-dot" style="background:${boat.color}"></div>
+        <div class="boat-info">
+          <div class="boat-name">${boat.name}</div>
+          <div class="boat-mmsi">${boat.mmsi}</div>
+        </div>
+        <div class="boat-speed">${speedText}</div>
+      `;
+
+      card.addEventListener("click", () => {
+        const layer = boatLayers[boat.mmsi];
+        if (layer?.marker) {
+          map.setView(layer.marker.getLatLng(), 13);
+        }
+      });
+
+      return card;
+    }
+
+    async function loadBoat(boat) {
+      let positions;
+      try {
+        const res = await fetch(`/api/positions/${boat.mmsi}`);
+        positions = await res.json();
+      } catch {
+        return null;
+      }
+
+      if (positions.length === 0) return null;
+
+      // positions come newest-first; reverse for drawing
+      const ordered = [...positions].reverse();
+      const latLngs = ordered.map(p => [p.lat, p.lon]);
+
+      // Remove existing layers
+      if (boatLayers[boat.mmsi]) {
+        boatLayers[boat.mmsi].polyline.remove();
+        boatLayers[boat.mmsi].marker.remove();
+      }
+
+      const polyline = L.polyline(latLngs, {
+        color: boat.color,
+        weight: 3,
+        opacity: 0.85,
+      }).addTo(map);
+
+      const latest = ordered[ordered.length - 1];
+      const marker = L.marker([latest.lat, latest.lon], {
+        icon: makeBoatIcon(boat.color),
+      })
+        .addTo(map)
+        .bindPopup(`<b>${boat.name}</b><br>MMSI: ${boat.mmsi}<br>Speed: ${latest.speed?.toFixed(1) ?? "—"} kn`);
+
+      boatLayers[boat.mmsi] = { polyline, marker };
+      return latest;
+    }
+
+    async function refresh() {
+      let boats;
+      try {
+        const res = await fetch("/api/boats");
+        boats = await res.json();
+      } catch {
+        setStatus("error", "Connection error");
+        return;
+      }
+
+      const list = document.getElementById("boat-list");
+      list.innerHTML = "";
+
+      if (boats.length === 0) {
+        list.innerHTML = '<div id="no-boats">No vessels tracked</div>';
+        setStatus(null, "No vessels");
+        return;
+      }
+
+      let anyPosition = false;
+      for (const boat of boats) {
+        if (!boat.active) continue;
+        const latest = await loadBoat(boat);
+        const card = renderBoatCard(boat, latest);
+        list.appendChild(card);
+        if (latest) anyPosition = true;
+      }
+
+      if (anyPosition) {
+        setStatus("live", "Live");
+      } else {
+        setStatus(null, "Waiting for data...");
+      }
+    }
+
+    // Initial load then poll every 30s
+    refresh();
+    setInterval(refresh, 30000);
+  </script>
+</body>
+</html>

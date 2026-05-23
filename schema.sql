@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS boats (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    mmsi TEXT NOT NULL UNIQUE,
+    color TEXT NOT NULL DEFAULT '#3388ff',
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS positions (
+    id SERIAL PRIMARY KEY,
+    mmsi TEXT NOT NULL,
+    lat DOUBLE PRECISION NOT NULL,
+    lon DOUBLE PRECISION NOT NULL,
+    speed DOUBLE PRECISION,
+    heading DOUBLE PRECISION,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS positions_mmsi_timestamp_idx ON positions (mmsi, timestamp DESC);
