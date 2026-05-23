@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -6,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import asyncpg
-import httpx
+import websockets
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -20,11 +21,15 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
-VESSELFINDER_API_KEY = os.getenv("VESSELFINDER_API_KEY", "DEMO")
+AISSTREAM_API_KEY = os.getenv("AISSTREAM_API_KEY", "")
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASS", "changeme")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
 SESSION_COOKIE = "ais_session"
+
+# Reconnect before Railway's 15-minute idle timeout kills the connection
+RECONNECT_INTERVAL = 14 * 60
+SAN_DIEGO_BBOX = [[[32.0, -118.5], [33.5, -116.5]]]
 
 _serializer = URLSafeTimedSerializer(SECRET_KEY)
 db_pool: asyncpg.Pool | None = None
@@ -114,80 +119,73 @@ async def init_db(pool: asyncpg.Pool) -> None:
     log.info("Database schema initialized")
 
 
-def schedule_stream_restart() -> None:
-    async def _restart() -> None:
-        global stream_task, db_pool
-        old = stream_task
-        if db_pool is not None:
-            stream_task = asyncio.create_task(ais_poll_task(db_pool))
-        if old and not old.done():
-            old.cancel()
-    asyncio.create_task(_restart())
+async def ais_stream_task(pool: asyncpg.Pool) -> None:
+    """Connect to AISstream.io WebSocket, filtering by tracked MMSIs, reconnecting every 14 minutes."""
+    uri = "wss://stream.aisstream.io/v0/stream"
 
-
-async def ais_poll_task(pool: asyncpg.Pool) -> None:
-    """Poll VesselFinder API every 60 seconds for each tracked vessel."""
-    url = "https://api.vesselfinder.com/vessels"
-    _logged_raw_response = False
     while True:
-        mmsis = list(tracked_mmsis)
-        if not mmsis:
-            await asyncio.sleep(60)
-            continue
-
         try:
-            log.info("Polling VesselFinder for MMSIs: %s", mmsis)
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.get(url, params={
-                    "userkey": VESSELFINDER_API_KEY,
-                    "mmsi": ",".join(mmsis),
-                })
-                resp.raise_for_status()
-                data = resp.json()
+            log.info("Connecting to AISstream.io...")
+            async with websockets.connect(uri, ping_interval=20, ping_timeout=20) as ws:
+                await ws.send(json.dumps({
+                    "APIKey": AISSTREAM_API_KEY,
+                    "BoundingBoxes": SAN_DIEGO_BBOX,
+                }))
+                log.info("Subscribed to AISstream.io with San Diego bounding box")
 
-            if not _logged_raw_response:
-                log.info("VesselFinder raw response: %s", data)
-                _logged_raw_response = True
+                deadline = asyncio.get_event_loop().time() + RECONNECT_INTERVAL
 
-            # API returns either a list or a dict keyed by MMSI; normalize to a list of vessel objects
-            if isinstance(data, dict):
-                vessels = list(data.values())
-            elif isinstance(data, list):
-                vessels = data
-            else:
-                log.warning("VesselFinder: unexpected response format: %s", type(data))
-                vessels = []
+                while True:
+                    remaining = deadline - asyncio.get_event_loop().time()
+                    if remaining <= 0:
+                        log.info("14-minute reconnect interval reached, reconnecting")
+                        break
 
-            async with pool.acquire() as conn:
-                for vessel in vessels:
                     try:
-                        ais = vessel.get("AIS", vessel)
-                        mmsi = str(ais.get("MMSI", ""))
-                        lat = ais.get("LATITUDE") or ais.get("LAT")
-                        lon = ais.get("LONGITUDE") or ais.get("LON")
-                        timestamp = ais.get("TIMESTAMP") or ais.get("TIME")
-                        if not mmsi or lat is None or lon is None:
-                            continue
-                        speed = ais.get("SOG") or ais.get("SPEED")
-                        heading = ais.get("HEADING")
-                        # 511 is the AIS "not available" sentinel for heading
-                        if heading == 511:
-                            heading = None
-                        await conn.execute(
-                            "INSERT INTO positions (mmsi, lat, lon, speed, heading) VALUES ($1, $2, $3, $4, $5)",
-                            mmsi, float(lat), float(lon),
-                            float(speed) if speed is not None else None,
-                            float(heading) if heading is not None else None,
-                        )
-                        log.info("Position saved: MMSI=%s lat=%.4f lon=%.4f speed=%s timestamp=%s", mmsi, lat, lon, speed, timestamp)
+                        raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 30))
+                    except asyncio.TimeoutError:
+                        continue
+
+                    try:
+                        msg = json.loads(raw)
+                    except json.JSONDecodeError:
+                        log.warning("Unparseable AIS message: %s", raw[:200])
+                        continue
+
+                    meta = msg.get("MetaData", {})
+                    mmsi = str(meta.get("MMSI", ""))
+                    if not mmsi or mmsi not in tracked_mmsis:
+                        continue
+
+                    lat = meta.get("latitude")
+                    lon = meta.get("longitude")
+                    if lat is None or lon is None:
+                        continue
+
+                    message_type = msg.get("MessageType", "")
+                    position = msg.get("Message", {}).get(message_type, {})
+                    speed = position.get("Sog")
+                    heading = position.get("TrueHeading")
+                    if heading == 511:
+                        heading = None
+
+                    try:
+                        async with pool.acquire() as conn:
+                            await conn.execute(
+                                "INSERT INTO positions (mmsi, lat, lon, speed, heading) VALUES ($1, $2, $3, $4, $5)",
+                                mmsi, float(lat), float(lon),
+                                float(speed) if speed is not None else None,
+                                float(heading) if heading is not None else None,
+                            )
+                        log.info("Position saved: MMSI=%s lat=%.4f lon=%.4f speed=%s", mmsi, lat, lon, speed)
                     except Exception:
-                        log.exception("Error processing vessel record")
+                        log.exception("Error saving position for MMSI=%s", mmsi)
+
         except asyncio.CancelledError:
             raise
         except Exception:
-            log.exception("VesselFinder poll error, retrying in 60s")
-
-        await asyncio.sleep(60)
+            log.exception("AISstream WebSocket error, reconnecting in 5s")
+            await asyncio.sleep(5)
 
 
 @asynccontextmanager
@@ -200,8 +198,8 @@ async def lifespan(app: FastAPI):
         rows = await conn.fetch("SELECT mmsi FROM boats WHERE active = true")
         tracked_mmsis = {row["mmsi"] for row in rows}
 
-    stream_task = asyncio.create_task(ais_poll_task(db_pool))
-    log.info("AIS poll task started for MMSIs: %s", tracked_mmsis)
+    stream_task = asyncio.create_task(ais_stream_task(db_pool))
+    log.info("AIS stream task started for MMSIs: %s", tracked_mmsis)
 
     yield
 
@@ -295,7 +293,6 @@ async def add_boat(boat: BoatCreate):
         except asyncpg.UniqueViolationError:
             raise HTTPException(status_code=409, detail="MMSI already registered")
     tracked_mmsis.add(boat.mmsi)
-    schedule_stream_restart()
     return dict(row)
 
 
@@ -332,7 +329,6 @@ async def update_boat(mmsi: str, update: BoatUpdate):
             tracked_mmsis.add(mmsi)
         else:
             tracked_mmsis.discard(mmsi)
-        schedule_stream_restart()
 
     return dict(row)
 
@@ -347,7 +343,6 @@ async def delete_boat(mmsi: str):
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Boat not found")
     tracked_mmsis.discard(mmsi)
-    schedule_stream_restart()
     return Response(status_code=204)
 
 
