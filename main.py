@@ -142,7 +142,12 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
         })
         try:
             log.info("Connecting to AIS stream for MMSIs: %s", mmsis)
-            async with websockets.connect(url) as ws:
+            async with websockets.connect(
+                url,
+                ping_interval=20,
+                ping_timeout=20,
+                open_timeout=60,
+            ) as ws:
                 await ws.send(subscribe_msg)
                 async for raw in ws:
                     try:
@@ -165,14 +170,14 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                                 float(speed) if speed is not None else None,
                                 float(heading) if heading is not None else None,
                             )
-                        log.info("Saved position: MMSI=%s lat=%.4f lon=%.4f", mmsi, lat, lon)
+                        log.info("Position received and saved: MMSI=%s lat=%.4f lon=%.4f speed=%s", mmsi, lat, lon, speed)
                     except Exception:
                         log.exception("Error processing AIS message")
         except asyncio.CancelledError:
             raise
         except Exception:
-            log.exception("AIS stream error, reconnecting in 10s")
-            await asyncio.sleep(10)
+            log.exception("AIS stream error, reconnecting in 30s")
+            await asyncio.sleep(30)
 
 
 @asynccontextmanager
