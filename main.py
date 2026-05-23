@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 import asyncpg
@@ -20,8 +20,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
-AISSTREAM_API_KEY = os.getenv("AISSTREAM_API_KEY", "")
-AISHUB_USERNAME = os.getenv("AISHUB_USERNAME", "")
+VESSELFINDER_API_KEY = os.getenv("VESSELFINDER_API_KEY", "DEMO")
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASS", "changeme")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
@@ -127,46 +126,39 @@ def schedule_stream_restart() -> None:
 
 
 async def ais_poll_task(pool: asyncpg.Pool) -> None:
-    """Poll AISHub HTTP API every 60 seconds (their rate limit is once per minute)."""
-    url = "https://data.aishub.net/ws.php"
+    """Poll VesselFinder API every 60 seconds for each tracked vessel."""
+    url = "https://api.vesselfinder.com/vessels"
     while True:
         mmsis = list(tracked_mmsis)
         if not mmsis:
             await asyncio.sleep(60)
             continue
 
-        if not AISHUB_USERNAME:
-            log.error("AISHUB_USERNAME not set — AIS polling disabled")
-            await asyncio.sleep(60)
-            continue
-
         try:
-            log.info("Polling AISHub for MMSIs: %s", mmsis)
+            log.info("Polling VesselFinder for MMSIs: %s", mmsis)
             async with httpx.AsyncClient(timeout=30.0) as client:
                 resp = await client.get(url, params={
-                    "username": AISHUB_USERNAME,
-                    "format": "1",
-                    "output": "json",
-                    "compress": "0",
+                    "userkey": VESSELFINDER_API_KEY,
                     "mmsi": ",".join(mmsis),
                 })
                 resp.raise_for_status()
                 data = resp.json()
 
-            # Response is [metadata_header, vessel1, vessel2, ...]
-            if not isinstance(data, list) or len(data) < 2:
-                log.info("AISHub: no vessel data in response")
+            # Response is a list of vessel objects; AIS data may be nested under "AIS" key
+            if not isinstance(data, list):
+                log.warning("VesselFinder: unexpected response format: %s", type(data))
             else:
                 async with pool.acquire() as conn:
-                    for vessel in data[1:]:
+                    for vessel in data:
                         try:
-                            mmsi = str(vessel.get("MMSI", ""))
-                            lat = vessel.get("LATITUDE")
-                            lon = vessel.get("LONGITUDE")
+                            ais = vessel.get("AIS", vessel)
+                            mmsi = str(ais.get("MMSI", ""))
+                            lat = ais.get("LATITUDE") or ais.get("LAT")
+                            lon = ais.get("LONGITUDE") or ais.get("LON")
                             if not mmsi or lat is None or lon is None:
                                 continue
-                            speed = vessel.get("SOG")
-                            heading = vessel.get("HEADING")
+                            speed = ais.get("SOG") or ais.get("SPEED")
+                            heading = ais.get("HEADING")
                             # 511 is the AIS "not available" sentinel for heading
                             if heading == 511:
                                 heading = None
@@ -182,7 +174,7 @@ async def ais_poll_task(pool: asyncpg.Pool) -> None:
         except asyncio.CancelledError:
             raise
         except Exception:
-            log.exception("AISHub poll error, retrying in 60s")
+            log.exception("VesselFinder poll error, retrying in 60s")
 
         await asyncio.sleep(60)
 
@@ -346,57 +338,6 @@ async def delete_boat(mmsi: str):
     tracked_mmsis.discard(mmsi)
     schedule_stream_restart()
     return Response(status_code=204)
-
-
-@app.post("/api/boats/{mmsi}/backfill")
-async def backfill_positions(mmsi: str):
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        boat = await conn.fetchrow("SELECT id FROM boats WHERE mmsi = $1", mmsi)
-    if not boat:
-        raise HTTPException(status_code=404, detail="Boat not found")
-
-    since = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    url = f"https://api.aisstream.io/v0/vessel/{mmsi}/track"
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(
-                url,
-                headers={"Authorization": f"Bearer {AISSTREAM_API_KEY}"},
-                params={"start": since},
-            )
-            if resp.status_code in (401, 402, 403):
-                return {"inserted": 0, "message": "Track history not available on current plan"}
-            if resp.status_code == 404:
-                return {"inserted": 0, "message": "No track data found"}
-            resp.raise_for_status()
-            data = resp.json()
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"AISStream error: {e.response.status_code}")
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=502, detail=f"AISStream connection error: {str(e)}")
-
-    inserted = 0
-    points = data.get("positions") or data.get("points") or []
-    async with pool.acquire() as conn:
-        for point in points:
-            try:
-                ts = point.get("timestamp") or point.get("time")
-                await conn.execute(
-                    "INSERT INTO positions (mmsi, lat, lon, speed, heading, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
-                    mmsi,
-                    float(point["lat"]),
-                    float(point["lon"]),
-                    float(point["speed"]) if point.get("speed") is not None else None,
-                    float(point["heading"]) if point.get("heading") is not None else None,
-                    ts,
-                )
-                inserted += 1
-            except Exception:
-                log.exception("Error inserting backfill point")
-
-    return {"inserted": inserted}
 
 
 # ---------------------------------------------------------------------------
