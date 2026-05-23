@@ -134,6 +134,8 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                 log.info("Subscribed to AISstream.io with San Diego bounding box")
 
                 deadline = asyncio.get_event_loop().time() + RECONNECT_INTERVAL
+                debug_msg_count = 0
+                first_msg_deadline = asyncio.get_event_loop().time() + 60
 
                 while True:
                     remaining = deadline - asyncio.get_event_loop().time()
@@ -144,7 +146,14 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                     try:
                         raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 30))
                     except asyncio.TimeoutError:
+                        if debug_msg_count == 0 and asyncio.get_event_loop().time() >= first_msg_deadline:
+                            log.warning("DEBUG: Zero messages received from AISstream after 60 seconds")
+                            first_msg_deadline = float("inf")
                         continue
+
+                    if debug_msg_count < 10:
+                        log.info("DEBUG RAW MSG #%d: %s", debug_msg_count + 1, raw[:2000])
+                        debug_msg_count += 1
 
                     try:
                         msg = json.loads(raw)
