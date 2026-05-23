@@ -128,6 +128,7 @@ def schedule_stream_restart() -> None:
 async def ais_poll_task(pool: asyncpg.Pool) -> None:
     """Poll VesselFinder API every 60 seconds for each tracked vessel."""
     url = "https://api.vesselfinder.com/vessels"
+    _logged_raw_response = False
     while True:
         mmsis = list(tracked_mmsis)
         if not mmsis:
@@ -144,33 +145,43 @@ async def ais_poll_task(pool: asyncpg.Pool) -> None:
                 resp.raise_for_status()
                 data = resp.json()
 
-            # Response is a list of vessel objects; AIS data may be nested under "AIS" key
-            if not isinstance(data, list):
-                log.warning("VesselFinder: unexpected response format: %s", type(data))
+            if not _logged_raw_response:
+                log.info("VesselFinder raw response: %s", data)
+                _logged_raw_response = True
+
+            # API returns either a list or a dict keyed by MMSI; normalize to a list of vessel objects
+            if isinstance(data, dict):
+                vessels = list(data.values())
+            elif isinstance(data, list):
+                vessels = data
             else:
-                async with pool.acquire() as conn:
-                    for vessel in data:
-                        try:
-                            ais = vessel.get("AIS", vessel)
-                            mmsi = str(ais.get("MMSI", ""))
-                            lat = ais.get("LATITUDE") or ais.get("LAT")
-                            lon = ais.get("LONGITUDE") or ais.get("LON")
-                            if not mmsi or lat is None or lon is None:
-                                continue
-                            speed = ais.get("SOG") or ais.get("SPEED")
-                            heading = ais.get("HEADING")
-                            # 511 is the AIS "not available" sentinel for heading
-                            if heading == 511:
-                                heading = None
-                            await conn.execute(
-                                "INSERT INTO positions (mmsi, lat, lon, speed, heading) VALUES ($1, $2, $3, $4, $5)",
-                                mmsi, float(lat), float(lon),
-                                float(speed) if speed is not None else None,
-                                float(heading) if heading is not None else None,
-                            )
-                            log.info("Position saved: MMSI=%s lat=%.4f lon=%.4f speed=%s", mmsi, lat, lon, speed)
-                        except Exception:
-                            log.exception("Error processing vessel record")
+                log.warning("VesselFinder: unexpected response format: %s", type(data))
+                vessels = []
+
+            async with pool.acquire() as conn:
+                for vessel in vessels:
+                    try:
+                        ais = vessel.get("AIS", vessel)
+                        mmsi = str(ais.get("MMSI", ""))
+                        lat = ais.get("LATITUDE") or ais.get("LAT")
+                        lon = ais.get("LONGITUDE") or ais.get("LON")
+                        timestamp = ais.get("TIMESTAMP") or ais.get("TIME")
+                        if not mmsi or lat is None or lon is None:
+                            continue
+                        speed = ais.get("SOG") or ais.get("SPEED")
+                        heading = ais.get("HEADING")
+                        # 511 is the AIS "not available" sentinel for heading
+                        if heading == 511:
+                            heading = None
+                        await conn.execute(
+                            "INSERT INTO positions (mmsi, lat, lon, speed, heading) VALUES ($1, $2, $3, $4, $5)",
+                            mmsi, float(lat), float(lon),
+                            float(speed) if speed is not None else None,
+                            float(heading) if heading is not None else None,
+                        )
+                        log.info("Position saved: MMSI=%s lat=%.4f lon=%.4f speed=%s timestamp=%s", mmsi, lat, lon, speed, timestamp)
+                    except Exception:
+                        log.exception("Error processing vessel record")
         except asyncio.CancelledError:
             raise
         except Exception:
