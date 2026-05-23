@@ -33,9 +33,19 @@
       letter-spacing: 0.5px;
     }
 
-    header h1 span {
-      color: #4a9eff;
+    header h1 span { color: #4a9eff; }
+
+    #manage-btn {
+      background: #2a2d3a;
+      border: 1px solid #3a3d4a;
+      border-radius: 6px;
+      color: #ccc;
+      padding: 5px 12px;
+      font-size: 13px;
+      cursor: pointer;
     }
+    #manage-btn:hover { background: #3a3d4a; color: #fff; }
+    #manage-btn.active { background: #4a9eff22; border-color: #4a9eff; color: #4a9eff; }
 
     #status {
       margin-left: auto;
@@ -56,10 +66,218 @@
     #status-dot.live { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
     #status-dot.error { background: #e74c3c; }
 
-    #map {
+    #logout-form { margin-left: 8px; }
+    #logout-btn {
+      background: transparent;
+      border: 1px solid #3a3d4a;
+      border-radius: 6px;
+      color: #666;
+      padding: 5px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #logout-btn:hover { color: #e74c3c; border-color: #e74c3c; }
+
+    #map { flex: 1; }
+
+    /* ── Manager panel ── */
+    #manager-panel {
+      position: absolute;
+      top: 70px;
+      left: 16px;
+      z-index: 1000;
+      background: #1a1d27ee;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      width: 280px;
+      backdrop-filter: blur(8px);
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      display: none;
+    }
+    #manager-panel.open { display: block; }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .panel-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #888;
       flex: 1;
     }
+    .panel-close {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+    .panel-close:hover { color: #e74c3c; }
 
+    .manager-section { margin-bottom: 18px; }
+    .manager-section h3 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #444;
+      margin-bottom: 10px;
+    }
+
+    /* Form */
+    .form-group { margin-bottom: 10px; }
+    .form-group label {
+      font-size: 12px;
+      color: #888;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .form-group input[type="text"] {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 6px;
+      color: #e0e0e0;
+      padding: 7px 10px;
+      font-size: 13px;
+      outline: none;
+    }
+    .form-group input[type="text"]:focus { border-color: #4a9eff; }
+
+    .form-color-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .form-group input[type="color"] {
+      width: 36px;
+      height: 28px;
+      border: 1px solid #2a2d3a;
+      border-radius: 5px;
+      background: #0f1117;
+      cursor: pointer;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    #new-boat-color-label {
+      font-size: 12px;
+      color: #666;
+      font-family: monospace;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: #4a9eff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .btn-primary:hover { background: #3a8eef; }
+    .btn-primary:disabled { background: #1a3a6f; color: #4a6fa0; cursor: default; }
+
+    .form-error {
+      font-size: 12px;
+      color: #e74c3c;
+      margin-top: 6px;
+      min-height: 16px;
+    }
+
+    /* Manager boat list */
+    .manager-boat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 4px;
+      border-bottom: 1px solid #1e2130;
+    }
+    .manager-boat-item:last-child { border-bottom: none; }
+
+    .color-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .manager-boat-name {
+      flex: 1;
+      min-width: 0;
+    }
+    .manager-boat-name .name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .manager-boat-name .mmsi {
+      font-size: 11px;
+      color: #555;
+    }
+
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative;
+      width: 32px;
+      height: 17px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #333;
+      border-radius: 17px;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      left: 3px;
+      bottom: 3px;
+      background: #777;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: #4a9eff; }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(15px);
+      background: #fff;
+    }
+
+    /* Small icon buttons */
+    .btn-sm {
+      background: none;
+      border: 1px solid #2a2d3a;
+      border-radius: 4px;
+      color: #777;
+      padding: 2px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .btn-sm:hover { color: #e0e0e0; border-color: #4a4d5a; }
+    .btn-sm.danger:hover { color: #e74c3c; border-color: #e74c3c; }
+    .btn-sm:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Vessel sidebar (right) ── */
     #sidebar {
       position: absolute;
       top: 70px;
@@ -92,7 +310,6 @@
       transition: background 0.15s;
       margin-bottom: 4px;
     }
-
     .boat-card:hover { background: #2a2d3a; }
 
     .boat-dot {
@@ -130,19 +347,87 @@
       text-align: center;
       padding: 8px 0;
     }
+
+    /* ── Leaflet tooltip overrides ── */
+    .leaflet-tooltip.boat-name-label {
+      background: rgba(26, 29, 39, 0.92);
+      border: 1px solid #2a2d3a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 7px;
+      box-shadow: none;
+      white-space: nowrap;
+    }
+    .leaflet-tooltip.boat-name-label::before { display: none; }
+
+    .leaflet-tooltip.coord-tip {
+      background: rgba(15, 17, 23, 0.92);
+      border: 1px solid #2a2d3a;
+      border-radius: 4px;
+      color: #999;
+      font-size: 11px;
+      font-family: monospace;
+      padding: 2px 7px;
+      box-shadow: none;
+      pointer-events: none;
+    }
+    .leaflet-tooltip.coord-tip::before { display: none; }
   </style>
 </head>
 <body>
   <header>
     <h1>AIS <span>Tracker</span></h1>
+    <button id="manage-btn" onclick="toggleManager()">Manage</button>
     <div id="status">
       <div id="status-dot"></div>
       <span id="status-text">Loading...</span>
     </div>
+    <form id="logout-form" method="post" action="/logout">
+      <button type="submit" id="logout-btn">Sign out</button>
+    </form>
   </header>
 
   <div id="map"></div>
 
+  <!-- Boat Manager panel (left) -->
+  <div id="manager-panel">
+    <div class="panel-header">
+      <h2>Boat Manager</h2>
+      <button class="panel-close" onclick="toggleManager()" title="Close">&times;</button>
+    </div>
+
+    <div class="manager-section">
+      <h3>Add Vessel</h3>
+      <form id="add-boat-form">
+        <div class="form-group">
+          <label for="new-boat-name">Boat Name</label>
+          <input type="text" id="new-boat-name" placeholder="My Vessel" required />
+        </div>
+        <div class="form-group">
+          <label for="new-boat-mmsi">MMSI</label>
+          <input type="text" id="new-boat-mmsi" placeholder="338234916" required />
+        </div>
+        <div class="form-group">
+          <label>Track Color</label>
+          <div class="form-color-row">
+            <input type="color" id="new-boat-color" value="#3388ff" />
+            <span id="new-boat-color-label">#3388ff</span>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" id="add-boat-btn">Add Vessel</button>
+        <div class="form-error" id="add-error"></div>
+      </form>
+    </div>
+
+    <div class="manager-section">
+      <h3>Tracked Vessels</h3>
+      <div id="manager-boat-list"></div>
+    </div>
+  </div>
+
+  <!-- Vessel sidebar (right) -->
   <div id="sidebar">
     <h2>Vessels</h2>
     <div id="boat-list"><div id="no-boats">No vessels tracked</div></div>
@@ -152,11 +437,7 @@
   <script>
     const SAN_DIEGO = [32.7, -117.2];
 
-    const map = L.map("map", {
-      center: SAN_DIEGO,
-      zoom: 11,
-      zoomControl: true,
-    });
+    const map = L.map("map", { center: SAN_DIEGO, zoom: 11 });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -165,12 +446,21 @@
 
     // State
     const boatLayers = {};  // mmsi -> { polyline, marker }
+    const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [12, 0] });
+
+    // ── Utilities ────────────────────────────────────────────────────────────
 
     function setStatus(state, text) {
       const dot = document.getElementById("status-dot");
-      dot.className = "";
-      if (state) dot.classList.add(state);
+      dot.className = state || "";
       document.getElementById("status-text").textContent = text;
+    }
+
+    function toggleManager() {
+      const panel = document.getElementById("manager-panel");
+      const btn = document.getElementById("manage-btn");
+      const open = panel.classList.toggle("open");
+      btn.classList.toggle("active", open);
     }
 
     function makeBoatIcon(color) {
@@ -185,54 +475,30 @@
       });
     }
 
-    function renderBoatCard(boat, latestPos) {
-      const card = document.createElement("div");
-      card.className = "boat-card";
-      card.dataset.mmsi = boat.mmsi;
-
-      const speedText = latestPos?.speed != null
-        ? `${latestPos.speed.toFixed(1)} kn`
-        : "—";
-
-      card.innerHTML = `
-        <div class="boat-dot" style="background:${boat.color}"></div>
-        <div class="boat-info">
-          <div class="boat-name">${boat.name}</div>
-          <div class="boat-mmsi">${boat.mmsi}</div>
-        </div>
-        <div class="boat-speed">${speedText}</div>
-      `;
-
-      card.addEventListener("click", () => {
-        const layer = boatLayers[boat.mmsi];
-        if (layer?.marker) {
-          map.setView(layer.marker.getLatLng(), 13);
-        }
-      });
-
-      return card;
+    function removeBoatFromMap(mmsi) {
+      const layers = boatLayers[mmsi];
+      if (!layers) return;
+      layers.polyline.remove();
+      layers.marker.remove();
+      delete boatLayers[mmsi];
     }
 
-    async function loadBoat(boat) {
+    // ── Map rendering ────────────────────────────────────────────────────────
+
+    async function updateBoatOnMap(boat) {
       let positions;
       try {
         const res = await fetch(`/api/positions/${boat.mmsi}`);
         positions = await res.json();
-      } catch {
-        return null;
-      }
+      } catch { return null; }
 
       if (positions.length === 0) return null;
 
-      // positions come newest-first; reverse for drawing
+      // API returns newest-first; reverse for drawing order
       const ordered = [...positions].reverse();
       const latLngs = ordered.map(p => [p.lat, p.lon]);
 
-      // Remove existing layers
-      if (boatLayers[boat.mmsi]) {
-        boatLayers[boat.mmsi].polyline.remove();
-        boatLayers[boat.mmsi].marker.remove();
-      }
+      removeBoatFromMap(boat.mmsi);
 
       const polyline = L.polyline(latLngs, {
         color: boat.color,
@@ -240,16 +506,160 @@
         opacity: 0.85,
       }).addTo(map);
 
+      // Show lat/lon when hovering over the track
+      polyline.on("mousemove", e => {
+        const { lat, lng } = e.latlng;
+        coordTip.setLatLng(e.latlng)
+          .setContent(`${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+          .addTo(map);
+      });
+      polyline.on("mouseout", () => coordTip.remove());
+
       const latest = ordered[ordered.length - 1];
-      const marker = L.marker([latest.lat, latest.lon], {
-        icon: makeBoatIcon(boat.color),
-      })
+      const marker = L.marker([latest.lat, latest.lon], { icon: makeBoatIcon(boat.color) })
         .addTo(map)
-        .bindPopup(`<b>${boat.name}</b><br>MMSI: ${boat.mmsi}<br>Speed: ${latest.speed?.toFixed(1) ?? "—"} kn`);
+        .bindPopup(
+          `<b>${boat.name}</b><br>MMSI: ${boat.mmsi}<br>Speed: ${latest.speed?.toFixed(1) ?? "—"} kn`
+        );
+
+      // Permanent name label above the marker
+      marker.bindTooltip(boat.name, {
+        permanent: true,
+        direction: "top",
+        offset: [0, -12],
+        className: "boat-name-label",
+      });
 
       boatLayers[boat.mmsi] = { polyline, marker };
       return latest;
     }
+
+    // ── Sidebar rendering ────────────────────────────────────────────────────
+
+    function renderVesselSidebar(activeBoats, latestMap) {
+      const list = document.getElementById("boat-list");
+      list.innerHTML = "";
+
+      if (activeBoats.length === 0) {
+        list.innerHTML = '<div id="no-boats">No vessels tracked</div>';
+        return;
+      }
+
+      for (const boat of activeBoats) {
+        const latest = latestMap[boat.mmsi];
+        const card = document.createElement("div");
+        card.className = "boat-card";
+        card.dataset.mmsi = boat.mmsi;
+
+        const speedText = latest?.speed != null ? `${latest.speed.toFixed(1)} kn` : "—";
+
+        card.innerHTML = `
+          <div class="boat-dot" style="background:${boat.color}"></div>
+          <div class="boat-info">
+            <div class="boat-name">${boat.name}</div>
+            <div class="boat-mmsi">${boat.mmsi}</div>
+          </div>
+          <div class="boat-speed">${speedText}</div>
+        `;
+
+        card.addEventListener("click", () => {
+          const layer = boatLayers[boat.mmsi];
+          if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
+        });
+
+        list.appendChild(card);
+      }
+    }
+
+    // ── Manager panel rendering ──────────────────────────────────────────────
+
+    function renderManagerList(boats) {
+      const list = document.getElementById("manager-boat-list");
+      list.innerHTML = "";
+
+      if (boats.length === 0) {
+        list.innerHTML = '<div style="font-size:13px;color:#555;padding:6px 0">No vessels added yet</div>';
+        return;
+      }
+
+      for (const boat of boats) {
+        const item = document.createElement("div");
+        item.className = "manager-boat-item";
+
+        item.innerHTML = `
+          <div class="color-swatch" style="background:${boat.color}"></div>
+          <div class="manager-boat-name">
+            <div class="name">${boat.name}</div>
+            <div class="mmsi">${boat.mmsi}</div>
+          </div>
+          <label class="toggle-switch" title="${boat.active ? "Active" : "Inactive"}">
+            <input type="checkbox" ${boat.active ? "checked" : ""} />
+            <span class="toggle-slider"></span>
+          </label>
+          <button class="btn-sm backfill-btn" title="Fetch last 24h of positions">Backfill</button>
+          <button class="btn-sm danger delete-btn" title="Delete vessel">Del</button>
+        `;
+
+        // Toggle active/inactive
+        const checkbox = item.querySelector("input[type=checkbox]");
+        checkbox.addEventListener("change", async () => {
+          checkbox.disabled = true;
+          try {
+            const res = await fetch(`/api/boats/${boat.mmsi}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ active: checkbox.checked }),
+            });
+            if (res.ok) {
+              await refresh();
+            } else {
+              checkbox.checked = !checkbox.checked;
+            }
+          } finally {
+            checkbox.disabled = false;
+          }
+        });
+
+        // Backfill
+        const backfillBtn = item.querySelector(".backfill-btn");
+        backfillBtn.addEventListener("click", async () => {
+          backfillBtn.textContent = "...";
+          backfillBtn.disabled = true;
+          try {
+            const res = await fetch(`/api/boats/${boat.mmsi}/backfill`, { method: "POST" });
+            const data = await res.json();
+            backfillBtn.textContent = `+${data.inserted ?? 0}`;
+            setTimeout(() => { backfillBtn.textContent = "Backfill"; }, 3000);
+            if ((data.inserted ?? 0) > 0) await refresh();
+          } catch {
+            backfillBtn.textContent = "Err";
+            setTimeout(() => { backfillBtn.textContent = "Backfill"; }, 2000);
+          } finally {
+            backfillBtn.disabled = false;
+          }
+        });
+
+        // Delete
+        const deleteBtn = item.querySelector(".delete-btn");
+        deleteBtn.addEventListener("click", async () => {
+          if (!confirm(`Delete "${boat.name}"? This will also remove all recorded positions.`)) return;
+          deleteBtn.disabled = true;
+          try {
+            const res = await fetch(`/api/boats/${boat.mmsi}`, { method: "DELETE" });
+            if (res.ok) {
+              removeBoatFromMap(boat.mmsi);
+              await refresh();
+            }
+          } finally {
+            deleteBtn.disabled = false;
+          }
+        });
+
+        list.appendChild(item);
+      }
+    }
+
+    // ── Main refresh ─────────────────────────────────────────────────────────
 
     async function refresh() {
       let boats;
@@ -261,32 +671,80 @@
         return;
       }
 
-      const list = document.getElementById("boat-list");
-      list.innerHTML = "";
-
-      if (boats.length === 0) {
-        list.innerHTML = '<div id="no-boats">No vessels tracked</div>';
-        setStatus(null, "No vessels");
-        return;
+      // Remove layers for boats no longer in DB
+      const currentMmsis = new Set(boats.map(b => b.mmsi));
+      for (const mmsi of Object.keys(boatLayers)) {
+        if (!currentMmsis.has(mmsi)) removeBoatFromMap(mmsi);
       }
 
+      const latestMap = {};
       let anyPosition = false;
+
       for (const boat of boats) {
-        if (!boat.active) continue;
-        const latest = await loadBoat(boat);
-        const card = renderBoatCard(boat, latest);
-        list.appendChild(card);
-        if (latest) anyPosition = true;
+        if (!boat.active) {
+          removeBoatFromMap(boat.mmsi);
+        } else {
+          const latest = await updateBoatOnMap(boat);
+          latestMap[boat.mmsi] = latest;
+          if (latest) anyPosition = true;
+        }
       }
+
+      renderVesselSidebar(boats.filter(b => b.active), latestMap);
+      renderManagerList(boats);
 
       if (anyPosition) {
         setStatus("live", "Live");
-      } else {
+      } else if (boats.some(b => b.active)) {
         setStatus(null, "Waiting for data...");
+      } else {
+        setStatus(null, "No active vessels");
       }
     }
 
-    // Initial load then poll every 30s
+    // ── Add boat form ────────────────────────────────────────────────────────
+
+    document.getElementById("new-boat-color").addEventListener("input", e => {
+      document.getElementById("new-boat-color-label").textContent = e.target.value;
+    });
+
+    document.getElementById("add-boat-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const name = document.getElementById("new-boat-name").value.trim();
+      const mmsi = document.getElementById("new-boat-mmsi").value.trim();
+      const color = document.getElementById("new-boat-color").value;
+      const errEl = document.getElementById("add-error");
+      const btn = document.getElementById("add-boat-btn");
+
+      errEl.textContent = "";
+      btn.disabled = true;
+      btn.textContent = "Adding...";
+
+      try {
+        const res = await fetch("/api/boats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, mmsi, color }),
+        });
+        if (res.ok) {
+          document.getElementById("new-boat-name").value = "";
+          document.getElementById("new-boat-mmsi").value = "";
+          document.getElementById("new-boat-color").value = "#3388ff";
+          document.getElementById("new-boat-color-label").textContent = "#3388ff";
+          await refresh();
+        } else {
+          const data = await res.json();
+          errEl.textContent = data.detail || "Failed to add vessel";
+        }
+      } catch {
+        errEl.textContent = "Network error";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Add Vessel";
+      }
+    });
+
+    // Initial load, then poll every 30s
     refresh();
     setInterval(refresh, 30000);
   </script>
