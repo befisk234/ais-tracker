@@ -18,3 +18,12 @@ CREATE TABLE IF NOT EXISTS positions (
 );
 
 CREATE INDEX IF NOT EXISTS positions_mmsi_timestamp_idx ON positions (mmsi, timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS saved_points (
+    id SERIAL PRIMARY KEY,
+    lat DOUBLE PRECISION NOT NULL,
+    lon DOUBLE PRECISION NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

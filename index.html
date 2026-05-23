@@ -15,24 +15,27 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
+    /* ── Header ── */
     header {
-      padding: 12px 20px;
+      padding: 10px 16px;
       background: #1a1d27;
       border-bottom: 1px solid #2a2d3a;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex-shrink: 0;
+      min-height: 48px;
     }
 
     header h1 {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 600;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
-
     header h1 span { color: #4a9eff; }
 
     #manage-btn {
@@ -43,6 +46,8 @@
       padding: 5px 12px;
       font-size: 13px;
       cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     #manage-btn:hover { background: #3a3d4a; color: #fff; }
     #manage-btn.active { background: #4a9eff22; border-color: #4a9eff; color: #4a9eff; }
@@ -54,19 +59,18 @@
       align-items: center;
       gap: 6px;
       color: #888;
+      flex-shrink: 0;
     }
-
     #status-dot {
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       border-radius: 50%;
       background: #444;
+      flex-shrink: 0;
     }
-
     #status-dot.live { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
     #status-dot.error { background: #e74c3c; }
 
-    #logout-form { margin-left: 8px; }
+    #logout-form { margin-left: 8px; flex-shrink: 0; }
     #logout-btn {
       background: transparent;
       border: 1px solid #3a3d4a;
@@ -78,12 +82,84 @@
     }
     #logout-btn:hover { color: #e74c3c; border-color: #e74c3c; }
 
-    #map { flex: 1; }
+    /* ── Date bar ── */
+    #date-bar {
+      background: #13151f;
+      border-bottom: 1px solid #1e2130;
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .date-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .date-group label {
+      font-size: 12px;
+      color: #666;
+      white-space: nowrap;
+    }
+    .date-group input[type="datetime-local"] {
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 6px;
+      color: #e0e0e0;
+      padding: 4px 8px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      color-scheme: dark;
+    }
+    .date-group input[type="datetime-local"]:focus { border-color: #4a9eff; }
 
-    /* ── Manager panel ── */
+    #load-track-btn {
+      background: #4a9eff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #load-track-btn:hover { background: #3a8eef; }
+
+    #clear-filter-btn {
+      background: transparent;
+      border: 1px solid #2a2d3a;
+      border-radius: 6px;
+      color: #555;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #clear-filter-btn:hover { color: #e0e0e0; border-color: #4a4d5a; }
+
+    #filter-badge {
+      font-size: 11px;
+      color: #4a9eff;
+      background: #4a9eff22;
+      border: 1px solid #4a9eff44;
+      border-radius: 4px;
+      padding: 2px 8px;
+      display: none;
+      white-space: nowrap;
+    }
+    #filter-badge.active { display: inline-block; }
+
+    /* ── Map ── */
+    #map { flex: 1; min-height: 0; }
+
+    /* ── Manager panel (left overlay, desktop) ── */
     #manager-panel {
       position: absolute;
-      top: 70px;
+      top: 110px;
       left: 16px;
       z-index: 1000;
       background: #1a1d27ee;
@@ -92,11 +168,20 @@
       padding: 14px 16px;
       width: 280px;
       backdrop-filter: blur(8px);
-      max-height: calc(100vh - 100px);
+      max-height: calc(100vh - 130px);
       overflow-y: auto;
       display: none;
     }
     #manager-panel.open { display: block; }
+
+    #drawer-handle {
+      display: none;
+      width: 36px;
+      height: 4px;
+      background: #3a3d4a;
+      border-radius: 2px;
+      margin: 0 auto 12px;
+    }
 
     .panel-header {
       display: flex;
@@ -132,7 +217,6 @@
       margin-bottom: 10px;
     }
 
-    /* Form */
     .form-group { margin-bottom: 10px; }
     .form-group label {
       font-size: 12px;
@@ -152,11 +236,7 @@
     }
     .form-group input[type="text"]:focus { border-color: #4a9eff; }
 
-    .form-color-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .form-color-row { display: flex; align-items: center; gap: 10px; }
     .form-group input[type="color"] {
       width: 36px;
       height: 28px;
@@ -167,11 +247,7 @@
       padding: 2px;
       flex-shrink: 0;
     }
-    #new-boat-color-label {
-      font-size: 12px;
-      color: #666;
-      font-family: monospace;
-    }
+    #new-boat-color-label { font-size: 12px; color: #666; font-family: monospace; }
 
     .btn-primary {
       width: 100%;
@@ -188,14 +264,8 @@
     .btn-primary:hover { background: #3a8eef; }
     .btn-primary:disabled { background: #1a3a6f; color: #4a6fa0; cursor: default; }
 
-    .form-error {
-      font-size: 12px;
-      color: #e74c3c;
-      margin-top: 6px;
-      min-height: 16px;
-    }
+    .form-error { font-size: 12px; color: #e74c3c; margin-top: 6px; min-height: 16px; }
 
-    /* Manager boat list */
     .manager-boat-item {
       display: flex;
       align-items: center;
@@ -205,36 +275,16 @@
     }
     .manager-boat-item:last-child { border-bottom: none; }
 
-    .color-swatch {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .color-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-    .manager-boat-name {
-      flex: 1;
-      min-width: 0;
-    }
+    .manager-boat-name { flex: 1; min-width: 0; }
     .manager-boat-name .name {
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 13px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .manager-boat-name .mmsi {
-      font-size: 11px;
-      color: #555;
-    }
+    .manager-boat-name .mmsi { font-size: 11px; color: #555; }
 
-    /* Toggle switch */
-    .toggle-switch {
-      position: relative;
-      width: 32px;
-      height: 17px;
-      flex-shrink: 0;
-    }
+    .toggle-switch { position: relative; width: 32px; height: 17px; flex-shrink: 0; }
     .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-slider {
       position: absolute;
@@ -247,10 +297,8 @@
     .toggle-slider::before {
       content: "";
       position: absolute;
-      width: 11px;
-      height: 11px;
-      left: 3px;
-      bottom: 3px;
+      width: 11px; height: 11px;
+      left: 3px; bottom: 3px;
       background: #777;
       border-radius: 50%;
       transition: transform 0.2s, background 0.2s;
@@ -261,7 +309,6 @@
       background: #fff;
     }
 
-    /* Small icon buttons */
     .btn-sm {
       background: none;
       border: 1px solid #2a2d3a;
@@ -277,10 +324,10 @@
     .btn-sm.danger:hover { color: #e74c3c; border-color: #e74c3c; }
     .btn-sm:disabled { opacity: 0.4; cursor: default; }
 
-    /* ── Vessel sidebar (right) ── */
+    /* ── Vessel sidebar (right overlay, desktop) ── */
     #sidebar {
       position: absolute;
-      top: 70px;
+      top: 110px;
       right: 16px;
       z-index: 1000;
       background: #1a1d27ee;
@@ -289,8 +336,9 @@
       padding: 14px 16px;
       width: 220px;
       backdrop-filter: blur(8px);
+      max-height: calc(100vh - 130px);
+      overflow-y: auto;
     }
-
     #sidebar h2 {
       font-size: 13px;
       font-weight: 600;
@@ -312,43 +360,18 @@
     }
     .boat-card:hover { background: #2a2d3a; }
 
-    .boat-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
+    .boat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .boat-info { flex: 1; min-width: 0; }
-
     .boat-name {
-      font-size: 14px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 14px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .boat-mmsi { font-size: 11px; color: #666; margin-top: 1px; }
+    .boat-speed { font-size: 12px; color: #aaa; text-align: right; flex-shrink: 0; }
 
-    .boat-mmsi {
-      font-size: 11px;
-      color: #666;
-      margin-top: 1px;
-    }
+    #no-boats { font-size: 13px; color: #555; text-align: center; padding: 8px 0; }
 
-    .boat-speed {
-      font-size: 12px;
-      color: #aaa;
-      text-align: right;
-    }
-
-    #no-boats {
-      font-size: 13px;
-      color: #555;
-      text-align: center;
-      padding: 8px 0;
-    }
-
-    /* ── Leaflet tooltip overrides ── */
+    /* ── Leaflet overrides ── */
     .leaflet-tooltip.boat-name-label {
       background: rgba(26, 29, 39, 0.92);
       border: 1px solid #2a2d3a;
@@ -363,17 +386,157 @@
     .leaflet-tooltip.boat-name-label::before { display: none; }
 
     .leaflet-tooltip.coord-tip {
-      background: rgba(15, 17, 23, 0.92);
+      background: rgba(15, 17, 23, 0.94);
       border: 1px solid #2a2d3a;
-      border-radius: 4px;
-      color: #999;
+      border-radius: 5px;
+      color: #aaa;
       font-size: 11px;
       font-family: monospace;
-      padding: 2px 7px;
-      box-shadow: none;
+      padding: 5px 9px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
       pointer-events: none;
+      line-height: 1.6;
+      white-space: nowrap;
     }
     .leaflet-tooltip.coord-tip::before { display: none; }
+
+    /* Dark popup theme */
+    .leaflet-popup-content-wrapper {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      color: #e0e0e0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    }
+    .leaflet-popup-tip { background: #1a1d27; }
+    .leaflet-popup-close-button { color: #555 !important; font-size: 18px !important; top: 6px !important; right: 8px !important; }
+    .leaflet-popup-close-button:hover { color: #e74c3c !important; }
+    .leaflet-popup-content { margin: 12px 14px; line-height: 1.5; }
+
+    /* Save note form inside popup */
+    .save-form { min-width: 210px; }
+    .save-form .sf-coords { font-size: 11px; color: #666; margin-bottom: 10px; font-family: monospace; }
+    .save-form .sf-field { margin-bottom: 8px; }
+    .save-form .sf-label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
+    .save-form input[type="text"],
+    .save-form textarea {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 5px;
+      color: #e0e0e0;
+      padding: 5px 8px;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+    .save-form input[type="text"]:focus,
+    .save-form textarea:focus { border-color: #4a9eff; }
+    .save-form textarea { resize: vertical; min-height: 60px; }
+    .save-form .sf-btn {
+      width: 100%;
+      background: #4a9eff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+    .save-form .sf-btn:hover { background: #3a8eef; }
+    .save-form .sf-btn:disabled { background: #1a3a6f; color: #4a6fa0; cursor: default; }
+    .save-form .sf-err { font-size: 11px; color: #e74c3c; margin-top: 4px; min-height: 14px; }
+
+    /* Saved point popup */
+    .point-popup .pt-name { font-weight: 600; color: #f5a623; }
+    .point-popup .pt-coords { font-size: 10px; color: #555; font-family: monospace; margin-top: 2px; }
+    .point-popup .pt-notes { margin-top: 6px; font-size: 12px; color: #bbb; white-space: pre-wrap; word-break: break-word; }
+    .point-popup .pt-date { font-size: 10px; color: #444; margin-top: 6px; }
+
+    /* ── Mobile layout ── */
+    @media (max-width: 767px) {
+      header { padding: 8px 12px; }
+      header h1 { font-size: 15px; }
+      #status-text { display: none; }
+
+      #date-bar { padding: 5px 10px; gap: 6px; }
+      .date-group { flex: 1; min-width: 0; }
+      .date-group label { display: none; }
+      .date-group input[type="datetime-local"] { font-size: 11px; padding: 4px 5px; width: 100%; }
+      #load-track-btn { padding: 5px 10px; font-size: 12px; }
+      #clear-filter-btn { padding: 5px 8px; font-size: 11px; }
+
+      /* Manager becomes bottom drawer */
+      #manager-panel {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-height: 72vh;
+        border-radius: 14px 14px 0 0;
+        border: 1px solid #2a2d3a;
+        border-bottom: none;
+        display: block !important;
+        transform: translateY(110%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y: auto;
+        z-index: 1100;
+        padding: 8px 16px 24px;
+      }
+      #manager-panel.open { transform: translateY(0); }
+      #drawer-handle { display: block; }
+
+      /* Vessel sidebar becomes bottom strip */
+      #sidebar {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 64px;
+        max-height: none;
+        border-radius: 0;
+        border: none;
+        border-top: 1px solid #2a2d3a;
+        padding: 0 10px;
+        display: flex !important;
+        flex-direction: row;
+        align-items: center;
+        overflow: hidden;
+        z-index: 900;
+      }
+      #sidebar h2 { display: none; }
+      #boat-list {
+        display: flex;
+        flex-direction: row;
+        gap: 6px;
+        align-items: center;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex: 1;
+        padding: 6px 0;
+        -webkit-overflow-scrolling: touch;
+      }
+      #no-boats { white-space: nowrap; font-size: 12px; padding: 0; }
+      .boat-card {
+        flex-shrink: 0;
+        min-width: 100px;
+        margin-bottom: 0;
+        padding: 4px 8px;
+        height: 48px;
+        background: #1e2130;
+      }
+      .boat-name { font-size: 12px; }
+      .boat-mmsi { font-size: 10px; }
+      .boat-speed { font-size: 11px; }
+
+      #map { margin-bottom: 64px; }
+    }
   </style>
 </head>
 <body>
@@ -389,10 +552,25 @@
     </form>
   </header>
 
+  <div id="date-bar">
+    <div class="date-group">
+      <label for="date-start">From</label>
+      <input type="datetime-local" id="date-start" />
+    </div>
+    <div class="date-group">
+      <label for="date-end">To</label>
+      <input type="datetime-local" id="date-end" />
+    </div>
+    <button id="load-track-btn" onclick="applyFilter()">Load Track</button>
+    <button id="clear-filter-btn" onclick="clearFilter()">Clear</button>
+    <span id="filter-badge">Filtered</span>
+  </div>
+
   <div id="map"></div>
 
-  <!-- Boat Manager panel (left) -->
+  <!-- Boat Manager panel -->
   <div id="manager-panel">
+    <div id="drawer-handle"></div>
     <div class="panel-header">
       <h2>Boat Manager</h2>
       <button class="panel-close" onclick="toggleManager()" title="Close">&times;</button>
@@ -427,7 +605,7 @@
     </div>
   </div>
 
-  <!-- Vessel sidebar (right) -->
+  <!-- Vessel sidebar -->
   <div id="sidebar">
     <h2>Vessels</h2>
     <div id="boat-list"><div id="no-boats">No vessels tracked</div></div>
@@ -436,7 +614,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const SAN_DIEGO = [32.7, -117.2];
-
     const map = L.map("map", { center: SAN_DIEGO, zoom: 11 });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -445,8 +622,11 @@
     }).addTo(map);
 
     // State
-    const boatLayers = {};  // mmsi -> { polyline, marker }
-    const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [12, 0] });
+    const boatLayers = {};
+    const savedPointLayers = [];
+    let filterStart = null;
+    let filterEnd = null;
+    const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [14, 0] });
 
     // ── Utilities ────────────────────────────────────────────────────────────
 
@@ -463,6 +643,25 @@
       btn.classList.toggle("active", open);
     }
 
+    function formatTs(ts) {
+      if (!ts) return "";
+      return new Date(ts).toLocaleString(undefined, {
+        month: "short", day: "numeric",
+        hour: "2-digit", minute: "2-digit",
+        timeZoneName: "short",
+      });
+    }
+
+    function nearestPoint(positions, lat, lng) {
+      let nearest = null;
+      let minDist = Infinity;
+      for (const p of positions) {
+        const d = (p.lat - lat) ** 2 + (p.lon - lng) ** 2;
+        if (d < minDist) { minDist = d; nearest = p; }
+      }
+      return nearest;
+    }
+
     function makeBoatIcon(color) {
       return L.divIcon({
         className: "",
@@ -475,6 +674,20 @@
       });
     }
 
+    function makePinIcon() {
+      return L.divIcon({
+        className: "",
+        html: `<svg width="22" height="28" viewBox="0 0 22 28">
+          <path d="M11 0C6.03 0 2 4.03 2 9c0 6.75 9 19 9 19s9-12.25 9-19c0-4.97-4.03-9-9-9z"
+                fill="#f5a623" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="11" cy="9" r="3.5" fill="#fff"/>
+        </svg>`,
+        iconSize: [22, 28],
+        iconAnchor: [11, 28],
+        popupAnchor: [0, -30],
+      });
+    }
+
     function removeBoatFromMap(mmsi) {
       const layers = boatLayers[mmsi];
       if (!layers) return;
@@ -483,18 +696,43 @@
       delete boatLayers[mmsi];
     }
 
-    // ── Map rendering ────────────────────────────────────────────────────────
+    // ── Date filter ──────────────────────────────────────────────────────────
+
+    function applyFilter() {
+      filterStart = document.getElementById("date-start").value || null;
+      filterEnd = document.getElementById("date-end").value || null;
+      document.getElementById("filter-badge").classList.toggle("active", !!(filterStart || filterEnd));
+      refresh();
+    }
+
+    function clearFilter() {
+      filterStart = null;
+      filterEnd = null;
+      document.getElementById("date-start").value = "";
+      document.getElementById("date-end").value = "";
+      document.getElementById("filter-badge").classList.remove("active");
+      refresh();
+    }
+
+    // ── Boat track rendering ─────────────────────────────────────────────────
 
     async function updateBoatOnMap(boat) {
+      const params = new URLSearchParams();
+      if (filterStart) params.set("start", filterStart);
+      if (filterEnd) params.set("end", filterEnd);
+      if (filterStart || filterEnd) params.set("limit", "5000");
+      const qs = params.toString();
+      const url = `/api/positions/${boat.mmsi}` + (qs ? "?" + qs : "");
+
       let positions;
       try {
-        const res = await fetch(`/api/positions/${boat.mmsi}`);
+        const res = await fetch(url);
         positions = await res.json();
       } catch { return null; }
 
       if (positions.length === 0) return null;
 
-      // API returns newest-first; reverse for drawing order
+      // API returns newest-first; reverse for chronological draw order
       const ordered = [...positions].reverse();
       const latLngs = ordered.map(p => [p.lat, p.lon]);
 
@@ -506,23 +744,33 @@
         opacity: 0.85,
       }).addTo(map);
 
-      // Show lat/lon when hovering over the track
       polyline.on("mousemove", e => {
         const { lat, lng } = e.latlng;
-        coordTip.setLatLng(e.latlng)
-          .setContent(`${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+        const near = nearestPoint(ordered, lat, lng);
+        const tsLine = near?.timestamp
+          ? `<br><span style="color:#7ab">${formatTs(near.timestamp)}</span>`
+          : "";
+        const spdLine = near?.speed != null
+          ? `<br><span style="color:#888">${near.speed.toFixed(1)} kn</span>`
+          : "";
+        coordTip
+          .setLatLng(e.latlng)
+          .setContent(`${lat.toFixed(5)}, ${lng.toFixed(5)}${tsLine}${spdLine}`)
           .addTo(map);
       });
       polyline.on("mouseout", () => coordTip.remove());
 
       const latest = ordered[ordered.length - 1];
+      const tsStr = latest.timestamp
+        ? `<br><span style="font-size:11px;color:#888">${formatTs(latest.timestamp)}</span>`
+        : "";
       const marker = L.marker([latest.lat, latest.lon], { icon: makeBoatIcon(boat.color) })
         .addTo(map)
         .bindPopup(
-          `<b>${boat.name}</b><br>MMSI: ${boat.mmsi}<br>Speed: ${latest.speed?.toFixed(1) ?? "—"} kn`
+          `<b>${boat.name}</b><br>MMSI: ${boat.mmsi}` +
+          `<br>Speed: ${latest.speed?.toFixed(1) ?? "—"} kn${tsStr}`
         );
 
-      // Permanent name label above the marker
       marker.bindTooltip(boat.name, {
         permanent: true,
         direction: "top",
@@ -530,9 +778,94 @@
         className: "boat-name-label",
       });
 
-      boatLayers[boat.mmsi] = { polyline, marker };
+      boatLayers[boat.mmsi] = { polyline, marker, positions: ordered };
       return latest;
     }
+
+    // ── Saved points ─────────────────────────────────────────────────────────
+
+    async function loadSavedPoints() {
+      for (const m of savedPointLayers) m.remove();
+      savedPointLayers.length = 0;
+
+      try {
+        const res = await fetch("/api/points");
+        const points = await res.json();
+        for (const pt of points) {
+          const div = document.createElement("div");
+          div.className = "point-popup";
+          div.innerHTML = `
+            <span class="pt-name">${pt.name || "Saved Point"}</span>
+            <div class="pt-coords">${pt.lat.toFixed(6)}, ${pt.lon.toFixed(6)}</div>
+            ${pt.notes ? `<div class="pt-notes">${pt.notes}</div>` : ""}
+            <div class="pt-date">${new Date(pt.created_at).toLocaleString()}</div>
+          `;
+          const marker = L.marker([pt.lat, pt.lon], {
+            icon: makePinIcon(),
+            zIndexOffset: -10,
+          }).addTo(map).bindPopup(div);
+          savedPointLayers.push(marker);
+        }
+      } catch {}
+    }
+
+    // ── Click-to-save note popup ─────────────────────────────────────────────
+
+    map.on("click", function(e) {
+      const { lat, lng } = e.latlng;
+
+      const div = document.createElement("div");
+      div.className = "save-form";
+      div.innerHTML = `
+        <div class="sf-coords">${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+        <div class="sf-field">
+          <label class="sf-label">Note name</label>
+          <input type="text" class="sf-name" placeholder="My waypoint" />
+        </div>
+        <div class="sf-field">
+          <label class="sf-label">Notes</label>
+          <textarea class="sf-notes" rows="3" placeholder="Observations..."></textarea>
+        </div>
+        <button class="sf-btn">Save</button>
+        <div class="sf-err"></div>
+      `;
+
+      const nameInput = div.querySelector(".sf-name");
+      const notesInput = div.querySelector(".sf-notes");
+      const saveBtn = div.querySelector(".sf-btn");
+      const errDiv = div.querySelector(".sf-err");
+
+      saveBtn.addEventListener("click", async () => {
+        const name = nameInput.value.trim();
+        const notes = notesInput.value.trim();
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
+        try {
+          const res = await fetch("/api/points", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat, lon: lng, name, notes }),
+          });
+          if (res.ok) {
+            map.closePopup();
+            await loadSavedPoints();
+          } else {
+            errDiv.textContent = "Save failed";
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save";
+          }
+        } catch {
+          errDiv.textContent = "Network error";
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Save";
+        }
+      });
+
+      L.popup({ maxWidth: 260 })
+        .setLatLng(e.latlng)
+        .setContent(div)
+        .openOn(map);
+    });
 
     // ── Sidebar rendering ────────────────────────────────────────────────────
 
@@ -549,10 +882,7 @@
         const latest = latestMap[boat.mmsi];
         const card = document.createElement("div");
         card.className = "boat-card";
-        card.dataset.mmsi = boat.mmsi;
-
         const speedText = latest?.speed != null ? `${latest.speed.toFixed(1)} kn` : "—";
-
         card.innerHTML = `
           <div class="boat-dot" style="background:${boat.color}"></div>
           <div class="boat-info">
@@ -561,12 +891,10 @@
           </div>
           <div class="boat-speed">${speedText}</div>
         `;
-
         card.addEventListener("click", () => {
           const layer = boatLayers[boat.mmsi];
           if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
         });
-
         list.appendChild(card);
       }
     }
@@ -585,7 +913,6 @@
       for (const boat of boats) {
         const item = document.createElement("div");
         item.className = "manager-boat-item";
-
         item.innerHTML = `
           <div class="color-swatch" style="background:${boat.color}"></div>
           <div class="manager-boat-name">
@@ -600,7 +927,6 @@
           <button class="btn-sm danger delete-btn" title="Delete vessel">Del</button>
         `;
 
-        // Toggle active/inactive
         const checkbox = item.querySelector("input[type=checkbox]");
         checkbox.addEventListener("change", async () => {
           checkbox.disabled = true;
@@ -610,17 +936,11 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ active: checkbox.checked }),
             });
-            if (res.ok) {
-              await refresh();
-            } else {
-              checkbox.checked = !checkbox.checked;
-            }
-          } finally {
-            checkbox.disabled = false;
-          }
+            if (res.ok) await refresh();
+            else checkbox.checked = !checkbox.checked;
+          } finally { checkbox.disabled = false; }
         });
 
-        // Backfill
         const backfillBtn = item.querySelector(".backfill-btn");
         backfillBtn.addEventListener("click", async () => {
           backfillBtn.textContent = "...";
@@ -634,25 +954,17 @@
           } catch {
             backfillBtn.textContent = "Err";
             setTimeout(() => { backfillBtn.textContent = "Backfill"; }, 2000);
-          } finally {
-            backfillBtn.disabled = false;
-          }
+          } finally { backfillBtn.disabled = false; }
         });
 
-        // Delete
         const deleteBtn = item.querySelector(".delete-btn");
         deleteBtn.addEventListener("click", async () => {
           if (!confirm(`Delete "${boat.name}"? This will also remove all recorded positions.`)) return;
           deleteBtn.disabled = true;
           try {
             const res = await fetch(`/api/boats/${boat.mmsi}`, { method: "DELETE" });
-            if (res.ok) {
-              removeBoatFromMap(boat.mmsi);
-              await refresh();
-            }
-          } finally {
-            deleteBtn.disabled = false;
-          }
+            if (res.ok) { removeBoatFromMap(boat.mmsi); await refresh(); }
+          } finally { deleteBtn.disabled = false; }
         });
 
         list.appendChild(item);
@@ -671,7 +983,6 @@
         return;
       }
 
-      // Remove layers for boats no longer in DB
       const currentMmsis = new Set(boats.map(b => b.mmsi));
       for (const mmsi of Object.keys(boatLayers)) {
         if (!currentMmsis.has(mmsi)) removeBoatFromMap(mmsi);
@@ -744,8 +1055,9 @@
       }
     });
 
-    // Initial load, then poll every 30s
+    // Initial load
     refresh();
+    loadSavedPoints();
     setInterval(refresh, 30000);
   </script>
 </body>

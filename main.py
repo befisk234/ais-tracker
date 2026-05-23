@@ -395,12 +395,75 @@ async def backfill_positions(mmsi: str):
 # Position API
 # ---------------------------------------------------------------------------
 
+def _parse_dt(s: str) -> datetime | None:
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s.strip(), fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+    return None
+
+
 @app.get("/api/positions/{mmsi}")
-async def get_positions(mmsi: str, limit: int = 500):
+async def get_positions(
+    mmsi: str,
+    limit: int = 500,
+    start: str | None = None,
+    end: str | None = None,
+):
+    pool = await get_pool()
+    clauses = ["mmsi = $1"]
+    params: list = [mmsi]
+
+    if start:
+        dt = _parse_dt(start)
+        if dt:
+            params.append(dt)
+            clauses.append(f"timestamp >= ${len(params)}")
+    if end:
+        dt = _parse_dt(end)
+        if dt:
+            params.append(dt)
+            clauses.append(f"timestamp <= ${len(params)}")
+
+    params.append(limit)
+    where = " AND ".join(clauses)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"SELECT lat, lon, speed, heading, timestamp FROM positions WHERE {where} ORDER BY timestamp DESC LIMIT ${len(params)}",
+            *params,
+        )
+    return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Saved points API
+# ---------------------------------------------------------------------------
+
+class PointCreate(BaseModel):
+    lat: float
+    lon: float
+    name: str = ""
+    notes: str = ""
+
+
+@app.post("/api/points", status_code=201)
+async def create_point(point: PointCreate):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO saved_points (lat, lon, name, notes) VALUES ($1, $2, $3, $4)"
+            " RETURNING id, lat, lon, name, notes, created_at",
+            point.lat, point.lon, point.name, point.notes,
+        )
+    return dict(row)
+
+
+@app.get("/api/points")
+async def list_points():
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT lat, lon, speed, heading, timestamp FROM positions WHERE mmsi = $1 ORDER BY timestamp DESC LIMIT $2",
-            mmsi, limit,
+            "SELECT id, lat, lon, name, notes, created_at FROM saved_points ORDER BY created_at DESC"
         )
     return [dict(r) for r in rows]
