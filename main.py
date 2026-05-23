@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -8,7 +7,6 @@ from pathlib import Path
 
 import asyncpg
 import httpx
-import websockets
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -23,6 +21,7 @@ log = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 AISSTREAM_API_KEY = os.getenv("AISSTREAM_API_KEY", "")
+AISHUB_USERNAME = os.getenv("AISHUB_USERNAME", "")
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASS", "changeme")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
@@ -121,63 +120,71 @@ def schedule_stream_restart() -> None:
         global stream_task, db_pool
         old = stream_task
         if db_pool is not None:
-            stream_task = asyncio.create_task(ais_stream_task(db_pool))
+            stream_task = asyncio.create_task(ais_poll_task(db_pool))
         if old and not old.done():
             old.cancel()
     asyncio.create_task(_restart())
 
 
-async def ais_stream_task(pool: asyncpg.Pool) -> None:
-    url = "wss://stream.aisstream.io/v0/stream"
+async def ais_poll_task(pool: asyncpg.Pool) -> None:
+    """Poll AISHub HTTP API every 60 seconds (their rate limit is once per minute)."""
+    url = "https://data.aishub.net/ws.php"
     while True:
         mmsis = list(tracked_mmsis)
         if not mmsis:
-            await asyncio.sleep(10)
+            await asyncio.sleep(60)
             continue
-        subscribe_msg = json.dumps({
-            "APIKey": AISSTREAM_API_KEY,
-            "BoundingBoxes": [[[-90, -180], [90, 180]]],
-            "FiltersShipMMSI": mmsis,
-            "FilterMessageTypes": ["PositionReport"],
-        })
+
+        if not AISHUB_USERNAME:
+            log.error("AISHUB_USERNAME not set — AIS polling disabled")
+            await asyncio.sleep(60)
+            continue
+
         try:
-            log.info("Connecting to AIS stream for MMSIs: %s", mmsis)
-            async with websockets.connect(
-                url,
-                ping_interval=20,
-                ping_timeout=20,
-                open_timeout=60,
-            ) as ws:
-                await ws.send(subscribe_msg)
-                async for raw in ws:
-                    try:
-                        msg = json.loads(raw)
-                        if msg.get("MessageType") != "PositionReport":
-                            continue
-                        meta = msg.get("MetaData", {})
-                        report = msg.get("Message", {}).get("PositionReport", {})
-                        mmsi = str(meta.get("MMSI", ""))
-                        lat = meta.get("latitude")
-                        lon = meta.get("longitude")
-                        if not mmsi or lat is None or lon is None:
-                            continue
-                        speed = report.get("Sog")
-                        heading = report.get("TrueHeading")
-                        async with pool.acquire() as conn:
+            log.info("Polling AISHub for MMSIs: %s", mmsis)
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(url, params={
+                    "username": AISHUB_USERNAME,
+                    "format": "1",
+                    "output": "json",
+                    "compress": "0",
+                    "mmsi": ",".join(mmsis),
+                })
+                resp.raise_for_status()
+                data = resp.json()
+
+            # Response is [metadata_header, vessel1, vessel2, ...]
+            if not isinstance(data, list) or len(data) < 2:
+                log.info("AISHub: no vessel data in response")
+            else:
+                async with pool.acquire() as conn:
+                    for vessel in data[1:]:
+                        try:
+                            mmsi = str(vessel.get("MMSI", ""))
+                            lat = vessel.get("LATITUDE")
+                            lon = vessel.get("LONGITUDE")
+                            if not mmsi or lat is None or lon is None:
+                                continue
+                            speed = vessel.get("SOG")
+                            heading = vessel.get("HEADING")
+                            # 511 is the AIS "not available" sentinel for heading
+                            if heading == 511:
+                                heading = None
                             await conn.execute(
                                 "INSERT INTO positions (mmsi, lat, lon, speed, heading) VALUES ($1, $2, $3, $4, $5)",
                                 mmsi, float(lat), float(lon),
                                 float(speed) if speed is not None else None,
                                 float(heading) if heading is not None else None,
                             )
-                        log.info("Position received and saved: MMSI=%s lat=%.4f lon=%.4f speed=%s", mmsi, lat, lon, speed)
-                    except Exception:
-                        log.exception("Error processing AIS message")
+                            log.info("Position saved: MMSI=%s lat=%.4f lon=%.4f speed=%s", mmsi, lat, lon, speed)
+                        except Exception:
+                            log.exception("Error processing vessel record")
         except asyncio.CancelledError:
             raise
         except Exception:
-            log.exception("AIS stream error, reconnecting in 30s")
-            await asyncio.sleep(30)
+            log.exception("AISHub poll error, retrying in 60s")
+
+        await asyncio.sleep(60)
 
 
 @asynccontextmanager
@@ -190,8 +197,8 @@ async def lifespan(app: FastAPI):
         rows = await conn.fetch("SELECT mmsi FROM boats WHERE active = true")
         tracked_mmsis = {row["mmsi"] for row in rows}
 
-    stream_task = asyncio.create_task(ais_stream_task(db_pool))
-    log.info("AIS stream task started for MMSIs: %s", tracked_mmsis)
+    stream_task = asyncio.create_task(ais_poll_task(db_pool))
+    log.info("AIS poll task started for MMSIs: %s", tracked_mmsis)
 
     yield
 
