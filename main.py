@@ -33,7 +33,7 @@ SAN_DIEGO_BBOX = [[[32.0, -118.5], [33.5, -116.5]]]
 
 _serializer = URLSafeTimedSerializer(SECRET_KEY)
 db_pool: asyncpg.Pool | None = None
-tracked_mmsis: set[str] = set()
+tracked_mmsis: dict[str, str] = {}  # mmsi -> ship name
 stream_task: asyncio.Task | None = None
 
 
@@ -134,8 +134,6 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                 log.info("Subscribed to AISstream.io with San Diego bounding box")
 
                 deadline = asyncio.get_event_loop().time() + RECONNECT_INTERVAL
-                debug_msg_count = 0
-                first_msg_deadline = asyncio.get_event_loop().time() + 60
 
                 while True:
                     remaining = deadline - asyncio.get_event_loop().time()
@@ -146,14 +144,7 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                     try:
                         raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 30))
                     except asyncio.TimeoutError:
-                        if debug_msg_count == 0 and asyncio.get_event_loop().time() >= first_msg_deadline:
-                            log.warning("DEBUG: Zero messages received from AISstream after 60 seconds")
-                            first_msg_deadline = float("inf")
                         continue
-
-                    if debug_msg_count < 10:
-                        log.info("DEBUG RAW MSG #%d: %s", debug_msg_count + 1, raw[:2000])
-                        debug_msg_count += 1
 
                     try:
                         msg = json.loads(raw)
@@ -163,7 +154,8 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
 
                     meta = msg.get("MetaData", {})
                     mmsi = str(meta.get("MMSI", ""))
-                    if not mmsi or mmsi not in tracked_mmsis:
+                    ship_name = tracked_mmsis.get(mmsi)
+                    if not ship_name:
                         continue
 
                     lat = meta.get("latitude")
@@ -186,7 +178,7 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                                 float(speed) if speed is not None else None,
                                 float(heading) if heading is not None else None,
                             )
-                        log.info("Position saved: MMSI=%s lat=%.4f lon=%.4f speed=%s", mmsi, lat, lon, speed)
+                        log.info("Saved position for MMSI %s (%s)", mmsi, ship_name)
                     except Exception:
                         log.exception("Error saving position for MMSI=%s", mmsi)
 
@@ -204,11 +196,11 @@ async def lifespan(app: FastAPI):
     await init_db(db_pool)
 
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT mmsi FROM boats WHERE active = true")
-        tracked_mmsis = {row["mmsi"] for row in rows}
+        rows = await conn.fetch("SELECT mmsi, name FROM boats WHERE active = true")
+        tracked_mmsis = {row["mmsi"]: row["name"] for row in rows}
 
     stream_task = asyncio.create_task(ais_stream_task(db_pool))
-    log.info("AIS stream task started for MMSIs: %s", tracked_mmsis)
+    log.info("AIS stream task started, tracking %d boat(s): %s", len(tracked_mmsis), list(tracked_mmsis))
 
     yield
 
@@ -301,7 +293,7 @@ async def add_boat(boat: BoatCreate):
             )
         except asyncpg.UniqueViolationError:
             raise HTTPException(status_code=409, detail="MMSI already registered")
-    tracked_mmsis.add(boat.mmsi)
+    tracked_mmsis[boat.mmsi] = boat.name
     return dict(row)
 
 
@@ -335,9 +327,9 @@ async def update_boat(mmsi: str, update: BoatUpdate):
 
     if update.active is not None:
         if update.active:
-            tracked_mmsis.add(mmsi)
+            tracked_mmsis[mmsi] = row["name"]
         else:
-            tracked_mmsis.discard(mmsi)
+            tracked_mmsis.pop(mmsi, None)
 
     return dict(row)
 
@@ -351,7 +343,7 @@ async def delete_boat(mmsi: str):
             result = await conn.execute("DELETE FROM boats WHERE mmsi = $1", mmsi)
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Boat not found")
-    tracked_mmsis.discard(mmsi)
+    tracked_mmsis.pop(mmsi, None)
     return Response(status_code=204)
 
 
