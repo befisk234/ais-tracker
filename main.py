@@ -29,7 +29,7 @@ SESSION_COOKIE = "ais_session"
 
 # Reconnect before Railway's 15-minute idle timeout kills the connection
 RECONNECT_INTERVAL = 14 * 60
-SAN_DIEGO_BBOX = [[[28.0, -122.0], [36.0, -114.0]]]
+GLOBAL_BBOX = [[[-90, -180], [90, 180]]]
 
 _serializer = URLSafeTimedSerializer(SECRET_KEY)
 db_pool: asyncpg.Pool | None = None
@@ -127,11 +127,14 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
         try:
             log.info("Connecting to AISstream.io...")
             async with websockets.connect(uri, ping_interval=20, ping_timeout=20) as ws:
+                mmsi_list = [int(m) for m in tracked_mmsis]
                 await ws.send(json.dumps({
                     "APIKey": AISSTREAM_API_KEY,
-                    "BoundingBoxes": SAN_DIEGO_BBOX,
+                    "BoundingBoxes": GLOBAL_BBOX,
+                    "FilterMessageTypes": ["PositionReport", "StandardClassBPositionReport"],
+                    "MMSI": mmsi_list,
                 }))
-                log.info("Subscribed to AISstream.io with San Diego bounding box")
+                log.info("Subscribed to AISstream.io for %d MMSI(s): %s", len(mmsi_list), mmsi_list)
 
                 deadline = asyncio.get_event_loop().time() + RECONNECT_INTERVAL
 
