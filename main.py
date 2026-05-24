@@ -29,7 +29,7 @@ SESSION_COOKIE = "ais_session"
 
 # Reconnect before Railway's 15-minute idle timeout kills the connection
 RECONNECT_INTERVAL = 14 * 60
-SAN_DIEGO_BBOX = [[[32.0, -118.5], [33.5, -116.5]]]
+SAN_DIEGO_BBOX = [[[28.0, -122.0], [36.0, -114.0]]]
 
 _serializer = URLSafeTimedSerializer(SECRET_KEY)
 db_pool: asyncpg.Pool | None = None
