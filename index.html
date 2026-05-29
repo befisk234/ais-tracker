@@ -360,7 +360,8 @@
     }
     .boat-card:hover { background: #2a2d3a; }
 
-    .boat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .boat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; }
+    .boat-dot:hover { opacity: 0.75; }
     .boat-info { flex: 1; min-width: 0; }
     .boat-name {
       font-size: 14px; font-weight: 500;
@@ -368,6 +369,12 @@
     }
     .boat-mmsi { font-size: 11px; color: #666; margin-top: 1px; }
     .boat-speed { font-size: 12px; color: #aaa; text-align: right; flex-shrink: 0; }
+    .boat-last-seen { font-size: 11px; color: #555; margin-top: 2px; }
+
+    .boat-card.solo-active {
+      background: #1e2a3a;
+      border: 1px solid #4a9eff55;
+    }
 
     #no-boats { font-size: 13px; color: #555; text-align: center; padding: 8px 0; }
 
@@ -534,6 +541,7 @@
       .boat-name { font-size: 12px; }
       .boat-mmsi { font-size: 10px; }
       .boat-speed { font-size: 11px; }
+      .boat-last-seen { display: none; }
 
       #map { margin-bottom: 64px; }
     }
@@ -626,6 +634,7 @@
     const savedPointLayers = [];
     let filterStart = null;
     let filterEnd = null;
+    let soloMmsi = null;
     const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [14, 0] });
 
     // ── Utilities ────────────────────────────────────────────────────────────
@@ -650,6 +659,30 @@
         hour: "2-digit", minute: "2-digit",
         timeZoneName: "short",
       });
+    }
+
+    function formatLastSeen(timestamp) {
+      if (!timestamp) return "No data yet";
+      const diffMin = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
+      if (diffMin < 1) return "Last seen: just now";
+      if (diffMin < 60) return `Last seen: ${diffMin} min ago`;
+      const diffHrs = Math.floor(diffMin / 60);
+      if (diffHrs < 24) return `Last seen: ${diffHrs} hr${diffHrs !== 1 ? "s" : ""} ago`;
+      const diffDays = Math.floor(diffHrs / 24);
+      return `Last seen: ${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+    }
+
+    function applySoloMode() {
+      for (const [mmsi, layers] of Object.entries(boatLayers)) {
+        const visible = soloMmsi === null || mmsi === soloMmsi;
+        if (visible) {
+          if (!map.hasLayer(layers.polyline)) layers.polyline.addTo(map);
+          if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
+        } else {
+          layers.polyline.remove();
+          layers.marker.remove();
+        }
+      }
     }
 
     function nearestPoint(positions, lat, lng) {
@@ -881,20 +914,63 @@
       for (const boat of activeBoats) {
         const latest = latestMap[boat.mmsi];
         const card = document.createElement("div");
-        card.className = "boat-card";
+        card.className = "boat-card" + (soloMmsi === boat.mmsi ? " solo-active" : "");
         const speedText = latest?.speed != null ? `${latest.speed.toFixed(1)} kn` : "—";
+        const lastSeenText = formatLastSeen(latest?.timestamp);
+
         card.innerHTML = `
-          <div class="boat-dot" style="background:${boat.color}"></div>
+          <div class="boat-dot" style="background:${boat.color}" title="Change color"></div>
+          <input type="color" value="${boat.color}" style="display:none">
           <div class="boat-info">
             <div class="boat-name">${boat.name}</div>
             <div class="boat-mmsi">${boat.mmsi}</div>
+            <div class="boat-last-seen">${lastSeenText}</div>
           </div>
           <div class="boat-speed">${speedText}</div>
         `;
-        card.addEventListener("click", () => {
-          const layer = boatLayers[boat.mmsi];
-          if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
+
+        const dot = card.querySelector(".boat-dot");
+        const colorInput = card.querySelector("input[type=color]");
+
+        dot.addEventListener("click", e => {
+          e.stopPropagation();
+          colorInput.click();
         });
+
+        colorInput.addEventListener("change", async () => {
+          const originalColor = dot.style.background;
+          const newColor = colorInput.value;
+          dot.style.background = newColor;
+          try {
+            const res = await fetch(`/api/boats/${boat.mmsi}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ color: newColor }),
+            });
+            if (!res.ok) throw new Error();
+            const layers = boatLayers[boat.mmsi];
+            if (layers) {
+              layers.polyline.setStyle({ color: newColor });
+              layers.marker.setIcon(makeBoatIcon(newColor));
+            }
+          } catch {
+            dot.style.background = originalColor;
+            colorInput.value = originalColor;
+          }
+        });
+
+        card.addEventListener("click", () => {
+          if (soloMmsi === boat.mmsi) {
+            soloMmsi = null;
+          } else {
+            soloMmsi = boat.mmsi;
+            const layer = boatLayers[boat.mmsi];
+            if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
+          }
+          applySoloMode();
+          renderVesselSidebar(activeBoats, latestMap);
+        });
+
         list.appendChild(card);
       }
     }
@@ -991,6 +1067,9 @@
       const latestMap = {};
       let anyPosition = false;
 
+      const activeSet = new Set(boats.filter(b => b.active).map(b => b.mmsi));
+      if (soloMmsi && !activeSet.has(soloMmsi)) soloMmsi = null;
+
       for (const boat of boats) {
         if (!boat.active) {
           removeBoatFromMap(boat.mmsi);
@@ -1001,8 +1080,10 @@
         }
       }
 
-      renderVesselSidebar(boats.filter(b => b.active), latestMap);
+      const activeBoats = boats.filter(b => b.active);
+      renderVesselSidebar(activeBoats, latestMap);
       renderManagerList(boats);
+      applySoloMode();
 
       if (anyPosition) {
         setStatus("live", "Live");
