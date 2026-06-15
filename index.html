@@ -359,7 +359,7 @@
       background: var(--navy2);
       border: 1px solid var(--border);
       border-radius: 8px;
-      width: 256px;
+      width: 268px;
       backdrop-filter: blur(8px);
       max-height: calc(100vh - 120px);
       overflow-y: auto;
@@ -464,12 +464,12 @@
     .boat-card {
       display: flex;
       align-items: flex-start;
-      gap: 10px;
-      padding: 10px 10px;
+      gap: 8px;
+      padding: 9px 8px;
       border-radius: 6px;
       cursor: pointer;
       transition: background 0.15s;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
       border: 1px solid transparent;
     }
     .boat-card:hover { background: var(--navy3); border-color: var(--border); }
@@ -478,24 +478,32 @@
       border: 1px solid var(--brass);
     }
 
+    /* Activity status dot (green = seen last hour, red = not) */
+    .activity-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .activity-dot.act-green { background: #22c55e; box-shadow: 0 0 4px #22c55e88; }
+    .activity-dot.act-red   { background: var(--danger); }
+
     .boat-dot {
       width: 12px; height: 12px; border-radius: 50%;
-      flex-shrink: 0; cursor: pointer;
+      flex-shrink: 0;
       margin-top: 3px;
       border: 2px solid rgba(255,255,255,0.3);
-      transition: opacity 0.15s;
     }
-    .boat-dot:hover { opacity: 0.75; }
     .boat-info { flex: 1; min-width: 0; }
     .boat-name {
-      font-size: 15px; font-weight: 600;
+      font-size: 14px; font-weight: 600;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       color: var(--white);
     }
     .boat-mmsi { font-size: 10px; color: var(--dim); margin-top: 1px; letter-spacing: 0.3px; }
     .boat-last-seen { font-size: 10px; color: var(--dim); margin-top: 3px; }
 
-    .style-select {
+    /* Color dropdown in sidebar */
+    .color-select {
       background: var(--navy);
       border: 1px solid var(--border);
       border-radius: 3px;
@@ -506,8 +514,9 @@
       outline: none;
       margin-top: 4px;
       display: block;
+      width: 100%;
     }
-    .style-select:focus { border-color: var(--brass); }
+    .color-select:focus { border-color: var(--brass); }
 
     .boat-speed-dist {
       text-align: right;
@@ -515,6 +524,21 @@
     }
     .boat-speed { font-size: 13px; color: var(--mist); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; }
     .boat-dist { font-size: 10px; color: var(--dim); margin-top: 2px; white-space: nowrap; }
+
+    /* Eye visibility toggle button */
+    .eye-btn {
+      background: none;
+      border: none;
+      color: var(--dim);
+      cursor: pointer;
+      padding: 3px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      border-radius: 3px;
+      line-height: 1;
+    }
+    .eye-btn:hover { color: var(--white); background: var(--navy3); }
+    .eye-btn.eye-hidden { color: var(--danger); }
 
     #no-boats { font-size: 13px; color: var(--dim); text-align: center; padding: 8px 0; }
 
@@ -613,6 +637,70 @@
     .point-popup .pt-notes { margin-top: 6px; font-size: 12px; color: var(--mist); white-space: pre-wrap; word-break: break-word; }
     .point-popup .pt-date { font-size: 10px; color: var(--dim); margin-top: 6px; }
 
+    /* ── Map controls ── */
+    .map-nav-control {
+      background: rgba(17, 34, 64, 0.92) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px !important;
+      overflow: hidden;
+    }
+    .map-nav-btn {
+      display: block;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--mist);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      width: 100%;
+      text-align: left;
+      letter-spacing: 0.3px;
+      font-family: 'Inter', sans-serif;
+    }
+    .map-nav-btn:last-child { border-bottom: none; }
+    .map-nav-btn:hover { background: var(--navy3); color: var(--brass2); }
+
+    /* Compass rose */
+    .compass-rose-control {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Nautical scale */
+    .nautical-scale-control {
+      background: rgba(11, 26, 46, 0.85) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 4px !important;
+      padding: 4px 8px !important;
+      color: var(--mist) !important;
+      font-size: 10px !important;
+      font-family: 'Inter', sans-serif !important;
+      pointer-events: none;
+    }
+    .ns-bar {
+      height: 3px;
+      background: var(--mist);
+      border-left: 2px solid var(--mist);
+      border-right: 2px solid var(--mist);
+      margin-bottom: 2px;
+    }
+    .ns-label {
+      color: var(--mist);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    /* Boat popup */
+    .boat-popup { min-width: 170px; }
+    .boat-popup .bp-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    .boat-popup .bp-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+    .boat-popup .bp-label { color: var(--dim); }
+    .boat-popup .bp-val { color: var(--white); font-weight: 500; }
+
     /* ── Mobile ── */
     @media (max-width: 767px) {
       header { padding: 0 12px; }
@@ -688,7 +776,7 @@
       }
       .boat-name { font-size: 12px; }
       .boat-mmsi { font-size: 10px; }
-      .boat-dist, .boat-last-seen, .style-select { display: none; }
+      .boat-dist, .boat-last-seen, .color-select, .eye-btn { display: none; }
 
       #map { margin-bottom: 68px; }
     }
@@ -812,9 +900,24 @@
     const SAN_DIEGO = [32.7, -117.2];
     const POINT_LOMA = [32.6644, -117.2417];
 
-    const map = L.map("map", { center: SAN_DIEGO, zoom: 11 });
+    const COLOR_OPTIONS = [
+      { name: 'Black',  value: '#000000' },
+      { name: 'Blue',   value: '#2563eb' },
+      { name: 'Green',  value: '#16a34a' },
+      { name: 'Red',    value: '#dc2626' },
+      { name: 'Purple', value: '#9333ea' },
+      { name: 'Yellow', value: '#eab308' },
+      { name: 'Orange', value: '#ea580c' },
+      { name: 'Pink',   value: '#ec4899' },
+      { name: 'Cyan',   value: '#06b6d4' },
+      { name: 'White',  value: '#ffffff' },
+    ];
 
-    // OpenStreetMap base layer with nautical OpenSeaMap overlay
+    const EYE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const EYE_OFF_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+    const map = L.map("map", { center: SAN_DIEGO, zoom: 11, zoomControl: true });
+
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
@@ -826,15 +929,103 @@
       opacity: 0.8,
     }).addTo(map);
 
+    // ── Map nav controls (Fit All Boats, Center on SD) ────────────────────────
+
+    const NavControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd() {
+        const div = L.DomUtil.create('div', 'map-nav-control');
+        L.DomEvent.disableClickPropagation(div);
+
+        const fitBtn = L.DomUtil.create('button', 'map-nav-btn', div);
+        fitBtn.innerHTML = '⊡ Fit All Boats';
+        fitBtn.title = 'Zoom to show all active boats';
+        L.DomEvent.on(fitBtn, 'click', e => { L.DomEvent.stop(e); fitAllBoats(); });
+
+        const centerBtn = L.DomUtil.create('button', 'map-nav-btn', div);
+        centerBtn.innerHTML = '⌖ San Diego';
+        centerBtn.title = 'Center on San Diego';
+        L.DomEvent.on(centerBtn, 'click', e => { L.DomEvent.stop(e); map.setView(SAN_DIEGO, 11); });
+
+        return div;
+      },
+    });
+    new NavControl().addTo(map);
+
+    // ── Nautical scale bar ────────────────────────────────────────────────────
+
+    const NauticalScaleControl = L.Control.extend({
+      options: { position: 'bottomleft' },
+      onAdd(map) {
+        this._map = map;
+        this._div = L.DomUtil.create('div', 'nautical-scale-control');
+        this._update();
+        map.on('zoomend moveend', this._update, this);
+        return this._div;
+      },
+      onRemove(map) {
+        map.off('zoomend moveend', this._update, this);
+      },
+      _update() {
+        const maxPx = 110;
+        const y = this._map.getSize().y / 2;
+        const left  = this._map.containerPointToLatLng([0, y]);
+        const right = this._map.containerPointToLatLng([maxPx, y]);
+        const nmTotal = haversineNm(left.lat, left.lng, right.lat, right.lng);
+
+        const steps = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 25, 50, 100, 200];
+        const niceNm = steps.find(s => s >= nmTotal * 0.6) || 200;
+        const px = Math.round(niceNm / nmTotal * maxPx);
+
+        this._div.innerHTML =
+          `<div class="ns-bar" style="width:${px}px"></div>` +
+          `<div class="ns-label">${niceNm} nm</div>`;
+      },
+    });
+    new NauticalScaleControl().addTo(map);
+
+    // ── Compass rose ──────────────────────────────────────────────────────────
+
+    const CompassControl = L.Control.extend({
+      options: { position: 'bottomright' },
+      onAdd() {
+        const div = L.DomUtil.create('div', 'compass-rose-control');
+        div.style.pointerEvents = 'none';
+        div.innerHTML = `
+          <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="28" cy="28" r="26" fill="rgba(11,26,46,0.82)" stroke="#1e3a5a" stroke-width="1.5"/>
+            <!-- N arrow -->
+            <path d="M28 6 L24 24 L28 21 L32 24 Z" fill="#f0f4f8"/>
+            <!-- S arrow -->
+            <path d="M28 50 L24 32 L28 35 L32 32 Z" fill="#3a5a78"/>
+            <!-- E arrow -->
+            <path d="M50 28 L32 24 L35 28 L32 32 Z" fill="#3a5a78"/>
+            <!-- W arrow -->
+            <path d="M6 28 L24 24 L21 28 L24 32 Z" fill="#3a5a78"/>
+            <!-- Center -->
+            <circle cx="28" cy="28" r="3" fill="#c9a227"/>
+            <!-- Labels -->
+            <text x="28" y="5" text-anchor="middle" dominant-baseline="hanging" fill="#f0f4f8" font-size="8" font-weight="700" font-family="Barlow Condensed,sans-serif" letter-spacing="0.5">N</text>
+            <text x="28" y="52" text-anchor="middle" dominant-baseline="auto" fill="#5a7a96" font-size="7" font-family="Barlow Condensed,sans-serif">S</text>
+            <text x="54" y="30" text-anchor="end" fill="#5a7a96" font-size="7" font-family="Barlow Condensed,sans-serif">E</text>
+            <text x="2" y="30" text-anchor="start" fill="#5a7a96" font-size="7" font-family="Barlow Condensed,sans-serif">W</text>
+          </svg>`;
+        return div;
+      },
+    });
+    new CompassControl().addTo(map);
+
     // State
     const boatLayers = {};
     const savedPointLayers = [];
+    const hiddenBoats = new Set();
     let filterStart = null;
     let filterEnd = null;
     let filterActive = false;
     let soloMmsi = null;
     let boats = [];
     let cachedLatestMap = {};
+    let cachedActiveBoats = [];
     let refreshInterval = null;
     let fishingGroundsVisible = false;
     const fishingGroundLayers = [];
@@ -857,12 +1048,6 @@
       const dλ = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(dλ / 2) ** 2;
       return 2 * R * Math.asin(Math.sqrt(a));
-    }
-
-    function trackDashArray(style) {
-      if (style === 'dashed') return '8 6';
-      if (style === 'dotted') return '2 6';
-      return null;
     }
 
     function setStatus(state, text) {
@@ -898,9 +1083,14 @@
       return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
     }
 
-    function applySoloMode() {
+    function applyVisibility() {
       for (const [mmsi, layers] of Object.entries(boatLayers)) {
-        const visible = soloMmsi === null || mmsi === soloMmsi;
+        let visible;
+        if (soloMmsi !== null) {
+          visible = mmsi === soloMmsi;
+        } else {
+          visible = !hiddenBoats.has(mmsi);
+        }
         if (visible) {
           if (!map.hasLayer(layers.polyline)) layers.polyline.addTo(map);
           if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
@@ -909,6 +1099,18 @@
           layers.marker.remove();
         }
       }
+    }
+
+    function fitAllBoats() {
+      const visiblePolylines = [];
+      for (const [mmsi, layers] of Object.entries(boatLayers)) {
+        if (soloMmsi !== null && mmsi !== soloMmsi) continue;
+        if (soloMmsi === null && hiddenBoats.has(mmsi)) continue;
+        visiblePolylines.push(layers.polyline);
+      }
+      if (visiblePolylines.length === 0) return;
+      const group = L.featureGroup(visiblePolylines);
+      map.fitBounds(group.getBounds(), { padding: [50, 50] });
     }
 
     function nearestPoint(positions, lat, lng) {
@@ -920,15 +1122,20 @@
       return nearest;
     }
 
-    function makeBoatIcon(color) {
+    function makeBoatIcon(color, heading) {
+      const deg = (heading != null && heading !== 511) ? heading : 0;
       return L.divIcon({
         className: "",
-        html: `<svg width="20" height="20" viewBox="0 0 20 20">
-          <circle cx="10" cy="10" r="8" fill="${color}" stroke="#fff" stroke-width="2"/>
-          <circle cx="10" cy="10" r="3.5" fill="#fff" opacity="0.8"/>
-        </svg>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
+        html: `<div style="width:30px;height:30px;transform:rotate(${deg}deg);transform-origin:center">
+          <svg width="30" height="30" viewBox="0 0 30 30">
+            <path d="M15 3 L10 27 L15 22 L20 27 Z"
+                  fill="${color}" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="15" cy="15" r="2.5" fill="white" opacity="0.75"/>
+          </svg>
+        </div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+        popupAnchor: [0, -16],
       });
     }
 
@@ -1036,7 +1243,7 @@
         const boat = boats.find(b => b.mmsi === soloMmsi);
         if (boat) {
           await updateBoatOnMap(boat);
-          applySoloMode();
+          applyVisibility();
         }
       } else {
         enterLiveMode();
@@ -1082,12 +1289,10 @@
 
       removeBoatFromMap(boat.mmsi);
 
-      const dashArray = trackDashArray(boat.track_style);
       const polyline = L.polyline(latLngs, {
         color: boat.color,
-        weight: 3,
+        weight: 4,
         opacity: 0.9,
-        dashArray,
       }).addTo(map);
 
       polyline.on("mousemove", e => {
@@ -1107,20 +1312,29 @@
       polyline.on("mouseout", () => coordTip.remove());
 
       const latest = ordered[ordered.length - 1];
-      const tsStr = latest.timestamp
-        ? `<br><span style="font-size:11px;color:#7a9abc">${formatTs(latest.timestamp)}</span>`
-        : "";
-      const marker = L.marker([latest.lat, latest.lon], { icon: makeBoatIcon(boat.color) })
-        .addTo(map)
-        .bindPopup(
-          `<b style="color:${boat.color}">${boat.name}</b><br>MMSI: ${boat.mmsi}` +
-          `<br>Speed: ${latest.speed?.toFixed(1) ?? "—"} kn${tsStr}`
-        );
+      const distNm = haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1);
+
+      const popupContent = document.createElement('div');
+      popupContent.className = 'boat-popup';
+      popupContent.innerHTML = `
+        <div class="bp-name" style="color:${boat.color}">${boat.name}</div>
+        <div class="bp-row"><span class="bp-label">Speed</span><span class="bp-val">${latest.speed?.toFixed(1) ?? '—'} kn</span></div>
+        <div class="bp-row"><span class="bp-label">Heading</span><span class="bp-val">${latest.heading != null && latest.heading !== 511 ? latest.heading + '°' : '—'}</span></div>
+        <div class="bp-row"><span class="bp-label">Dist (Pt Loma)</span><span class="bp-val">${distNm} nm</span></div>
+        <div class="bp-row"><span class="bp-label">Last seen</span><span class="bp-val">${formatLastSeen(latest.timestamp)}</span></div>
+      `;
+
+      const marker = L.marker([latest.lat, latest.lon], {
+        icon: makeBoatIcon(boat.color, latest.heading),
+        zIndexOffset: 100,
+      }).addTo(map).bindPopup(popupContent, { maxWidth: 220 });
+
+      marker.on('mouseover', function() { this.openPopup(); });
 
       marker.bindTooltip(boat.name, {
         permanent: true,
         direction: "top",
-        offset: [0, -12],
+        offset: [0, -16],
         className: "boat-name-label",
       });
 
@@ -1207,48 +1421,65 @@
         return;
       }
 
-      for (const boat of activeBoats) {
+      // Sort most recently seen first
+      const sorted = [...activeBoats].sort((a, b) => {
+        const tA = latestMap[a.mmsi]?.timestamp;
+        const tB = latestMap[b.mmsi]?.timestamp;
+        if (!tA && !tB) return 0;
+        if (!tA) return 1;
+        if (!tB) return -1;
+        return new Date(tB) - new Date(tA);
+      });
+
+      const ONE_HOUR_MS = 60 * 60 * 1000;
+      const now = Date.now();
+
+      for (const boat of sorted) {
         const latest = latestMap[boat.mmsi];
         const card = document.createElement("div");
         card.className = "boat-card" + (soloMmsi === boat.mmsi ? " solo-active" : "");
+
         const speedText = latest?.speed != null ? `${latest.speed.toFixed(1)} kn` : "—";
         const lastSeenText = formatLastSeen(latest?.timestamp);
         const distText = latest
           ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) + " nm"
           : "—";
-        const trackStyle = boat.track_style || 'solid';
+
+        const isRecent = latest?.timestamp &&
+          (now - new Date(latest.timestamp).getTime()) < ONE_HOUR_MS;
+        const isHidden = hiddenBoats.has(boat.mmsi);
+
+        // Build color options HTML
+        const hasExactMatch = COLOR_OPTIONS.some(c => c.value.toLowerCase() === boat.color.toLowerCase());
+        const customOpt = !hasExactMatch
+          ? `<option value="${boat.color}" selected>Custom (${boat.color})</option>` : '';
+        const colorOptsHtml = customOpt + COLOR_OPTIONS.map(c =>
+          `<option value="${c.value}"${!customOpt && c.value.toLowerCase() === boat.color.toLowerCase() ? ' selected' : ''}>${c.name}</option>`
+        ).join('');
 
         card.innerHTML = `
-          <div class="boat-dot" style="background:${boat.color}" title="Change color"></div>
-          <input type="color" value="${boat.color}" style="display:none">
+          <div class="activity-dot ${isRecent ? 'act-green' : 'act-red'}" title="${isRecent ? 'Seen in last hour' : 'Not seen recently'}"></div>
+          <div class="boat-dot" style="background:${boat.color}"></div>
           <div class="boat-info">
             <div class="boat-name">${boat.name}</div>
             <div class="boat-mmsi">${boat.mmsi}</div>
-            <select class="style-select" title="Track style">
-              <option value="solid"${trackStyle === 'solid' ? ' selected' : ''}>Solid</option>
-              <option value="dashed"${trackStyle === 'dashed' ? ' selected' : ''}>Dashed</option>
-              <option value="dotted"${trackStyle === 'dotted' ? ' selected' : ''}>Dotted</option>
-            </select>
+            <select class="color-select" title="Track color">${colorOptsHtml}</select>
             <div class="boat-last-seen">${lastSeenText}</div>
           </div>
           <div class="boat-speed-dist">
             <div class="boat-speed">${speedText}</div>
             <div class="boat-dist">${distText}</div>
           </div>
+          <button class="eye-btn${isHidden ? ' eye-hidden' : ''}" title="${isHidden ? 'Show on map' : 'Hide on map'}">${isHidden ? EYE_OFF_SVG : EYE_SVG}</button>
         `;
 
         const dot = card.querySelector(".boat-dot");
-        const colorInput = card.querySelector("input[type=color]");
-        const styleSelect = card.querySelector(".style-select");
+        const colorSelect = card.querySelector(".color-select");
+        const eyeBtn = card.querySelector(".eye-btn");
 
-        dot.addEventListener("click", e => {
+        colorSelect.addEventListener("change", async e => {
           e.stopPropagation();
-          colorInput.click();
-        });
-
-        colorInput.addEventListener("change", async () => {
-          const originalColor = dot.style.background;
-          const newColor = colorInput.value;
+          const newColor = colorSelect.value;
           dot.style.background = newColor;
           try {
             const res = await fetch(`/api/boats/${boat.mmsi}`, {
@@ -1257,32 +1488,28 @@
               body: JSON.stringify({ color: newColor }),
             });
             if (!res.ok) throw new Error();
+            boat.color = newColor;
             const layers = boatLayers[boat.mmsi];
             if (layers) {
               layers.polyline.setStyle({ color: newColor });
-              layers.marker.setIcon(makeBoatIcon(newColor));
+              const latestPos = layers.positions[layers.positions.length - 1];
+              layers.marker.setIcon(makeBoatIcon(newColor, latestPos?.heading));
             }
           } catch {
-            dot.style.background = originalColor;
-            colorInput.value = originalColor;
+            dot.style.background = boat.color;
+            colorSelect.value = boat.color;
           }
         });
 
-        styleSelect.addEventListener("change", async e => {
+        eyeBtn.addEventListener("click", e => {
           e.stopPropagation();
-          const newStyle = styleSelect.value;
-          try {
-            const res = await fetch(`/api/boats/${boat.mmsi}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ track_style: newStyle }),
-            });
-            if (!res.ok) throw new Error();
-            const layers = boatLayers[boat.mmsi];
-            if (layers) layers.polyline.setStyle({ dashArray: trackDashArray(newStyle) });
-          } catch {
-            styleSelect.value = boat.track_style || 'solid';
+          if (hiddenBoats.has(boat.mmsi)) {
+            hiddenBoats.delete(boat.mmsi);
+          } else {
+            hiddenBoats.add(boat.mmsi);
           }
+          applyVisibility();
+          renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
         });
 
         card.addEventListener("click", () => {
@@ -1294,8 +1521,8 @@
             const layer = boatLayers[boat.mmsi];
             if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
           }
-          applySoloMode();
-          renderVesselSidebar(activeBoats, latestMap);
+          applyVisibility();
+          renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
           updateDateBarUI();
         });
 
@@ -1394,10 +1621,10 @@
           if (latest) anyPosition = true;
         }
       }
-      const activeBoats = boats.filter(b => b.active);
-      renderVesselSidebar(activeBoats, cachedLatestMap);
+      cachedActiveBoats = boats.filter(b => b.active);
+      renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
       renderManagerList(boats);
-      applySoloMode();
+      applyVisibility();
       updateDateBarUI();
       if (anyPosition) {
         setStatus("live", "Live");
@@ -1450,10 +1677,6 @@
     // ── Marine widgets ───────────────────────────────────────────────────────
 
     async function loadTide() {
-      // NOAA Tides & Currents API — station 9410170 (San Diego Bay)
-      const now = new Date();
-      const pad = n => String(n).padStart(2, '0');
-      const today = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
       const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9410170&product=water_level&datum=MLLW&time_zone=lst_ldt&units=english&format=json&date=today`;
       try {
         const res = await fetch(url);
@@ -1462,7 +1685,6 @@
         if (!readings || readings.length === 0) throw new Error();
         const latest = readings[readings.length - 1];
         const ft = parseFloat(latest.v).toFixed(1);
-        document.getElementById("tide-val").textContent = ft;
         document.getElementById("tide-val").classList.remove("loading");
         document.getElementById("tide-val").innerHTML = `${ft} <span class="widget-unit">ft</span>`;
         document.getElementById("tide-sub").textContent = "MLLW · SD Bay";
@@ -1473,20 +1695,16 @@
     }
 
     async function loadBuoyData() {
-      // NOAA NDBC buoy 46225 (Santa Monica Basin, nearest to SD offshore)
-      // Using text data endpoint
       const url = "https://www.ndbc.noaa.gov/data/realtime2/46225.txt";
       try {
         const res = await fetch(url);
         const text = await res.text();
         const lines = text.trim().split('\n');
-        // Skip 2 header lines, get most recent (line 2)
         if (lines.length < 3) throw new Error();
         const parts = lines[2].trim().split(/\s+/);
-        // Columns: YY MM DD hh mm WDIR WSPD GST WVHT DPD APD MWD PRES ATMP WTMP DEWP VIS PTDY TIDE
-        const wdir = parts[5];  // wind direction degrees
-        const wspd = parts[6];  // wind speed m/s
-        const wtmp = parts[14]; // water temp °C
+        const wdir = parts[5];
+        const wspd = parts[6];
+        const wtmp = parts[14];
 
         const wspdKts = wspd !== 'MM' ? (parseFloat(wspd) * 1.944).toFixed(0) : null;
         const wtmpF   = wtmp !== 'MM' ? (parseFloat(wtmp) * 9/5 + 32).toFixed(1) : null;
@@ -1519,7 +1737,6 @@
     }
 
     function loadSunTimes() {
-      // Sunrise/sunset for San Diego using SunCalc algorithm (built-in, no API needed)
       const lat = 32.7157, lon = -117.1611;
       const now = new Date();
       const { rise, set } = sunCalc(now, lat, lon);
@@ -1529,7 +1746,6 @@
       document.getElementById("sun-sub").textContent = `Set ${fmt(set)}`;
     }
 
-    // Minimal SunCalc — returns sunrise/sunset as Date objects for given date and location
     function sunCalc(date, lat, lon) {
       const rad = Math.PI / 180;
       const J2000 = 2451545.0;
@@ -1564,7 +1780,6 @@
     loadSavedPoints();
     loadWidgets();
     startAutoRefresh();
-    // Refresh widgets every 15 minutes
     setInterval(loadWidgets, 15 * 60 * 1000);
   </script>
 </body>
