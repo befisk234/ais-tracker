@@ -3,15 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AIS Tracker</title>
+  <title>SD Fish Tracker</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+      --navy:    #0b1a2e;
+      --navy2:   #112240;
+      --navy3:   #1a3358;
+      --steel:   #1e4d7a;
+      --ocean:   #0d3b5e;
+      --brass:   #c9a227;
+      --brass2:  #e8b830;
+      --seafoam: #2ee8b5;
+      --white:   #f0f4f8;
+      --mist:    #a8bdd0;
+      --dim:     #5a7a96;
+      --danger:  #e74c3c;
+      --border:  #1e3a5a;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f1117;
-      color: #e0e0e0;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--navy);
+      color: var(--white);
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -20,170 +38,184 @@
 
     /* ── Header ── */
     header {
-      padding: 10px 16px;
-      background: #1a1d27;
-      border-bottom: 1px solid #2a2d3a;
+      padding: 0 16px;
+      background: var(--navy2);
+      border-bottom: 2px solid var(--brass);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-shrink: 0;
-      min-height: 48px;
+      height: 52px;
     }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-brand svg { flex-shrink: 0; }
 
     header h1 {
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 1px;
       white-space: nowrap;
+      color: var(--white);
+      text-transform: uppercase;
     }
-    header h1 span { color: #4a9eff; }
+    header h1 span { color: var(--brass2); }
 
     #manage-btn {
-      background: #2a2d3a;
-      border: 1px solid #3a3d4a;
-      border-radius: 6px;
-      color: #ccc;
+      background: var(--navy3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--mist);
       padding: 5px 12px;
       font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
       flex-shrink: 0;
     }
-    #manage-btn:hover { background: #3a3d4a; color: #fff; }
-    #manage-btn.active { background: #4a9eff22; border-color: #4a9eff; color: #4a9eff; }
+    #manage-btn:hover { border-color: var(--brass); color: var(--brass2); }
+    #manage-btn.active { background: #2a1f00; border-color: var(--brass); color: var(--brass2); }
 
     #status {
       margin-left: auto;
-      font-size: 13px;
+      font-size: 12px;
       display: flex;
       align-items: center;
       gap: 6px;
-      color: #888;
+      color: var(--mist);
       flex-shrink: 0;
     }
     #status-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
-      background: #444;
+      background: #333;
       flex-shrink: 0;
     }
-    #status-dot.live { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
-    #status-dot.error { background: #e74c3c; }
+    #status-dot.live { background: var(--seafoam); box-shadow: 0 0 6px var(--seafoam); }
+    #status-dot.error { background: var(--danger); }
 
     #logout-form { margin-left: 8px; flex-shrink: 0; }
     #logout-btn {
       background: transparent;
-      border: 1px solid #3a3d4a;
-      border-radius: 6px;
-      color: #666;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--dim);
       padding: 5px 12px;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
     }
-    #logout-btn:hover { color: #e74c3c; border-color: #e74c3c; }
+    #logout-btn:hover { color: var(--danger); border-color: var(--danger); }
 
     /* ── Date bar ── */
     #date-bar {
-      background: #13151f;
-      border-bottom: 1px solid #1e2130;
-      padding: 7px 16px;
+      background: var(--ocean);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 16px;
       display: flex;
       align-items: center;
       gap: 10px;
       flex-shrink: 0;
       flex-wrap: wrap;
-      min-height: 42px;
+      min-height: 40px;
     }
 
     #no-vessel-msg {
-      font-size: 13px;
-      color: #444;
+      font-size: 12px;
+      color: var(--dim);
       font-style: italic;
     }
 
     #date-inputs {
       display: none;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
     .date-group {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
     .date-group label {
-      font-size: 12px;
-      color: #666;
+      font-size: 11px;
+      color: var(--dim);
       white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .date-group input[type="datetime-local"] {
-      background: #0f1117;
-      border: 1px solid #2a2d3a;
-      border-radius: 6px;
-      color: #e0e0e0;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--white);
       padding: 4px 8px;
       font-size: 12px;
       outline: none;
       cursor: pointer;
       color-scheme: dark;
     }
-    .date-group input[type="datetime-local"]:focus { border-color: #4a9eff; }
+    .date-group input[type="datetime-local"]:focus { border-color: var(--brass); }
 
     #load-track-btn {
-      background: #4a9eff;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 5px 14px;
-      font-size: 13px;
+      background: var(--steel);
+      color: var(--white);
+      border: 1px solid var(--brass);
+      border-radius: 4px;
+      padding: 4px 14px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
+      letter-spacing: 0.3px;
     }
-    #load-track-btn:hover { background: #3a8eef; }
+    #load-track-btn:hover { background: var(--brass); color: var(--navy); }
 
     #live-mode-btn {
-      background: #27ae60;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 5px 14px;
-      font-size: 13px;
+      background: transparent;
+      color: var(--seafoam);
+      border: 1px solid var(--seafoam);
+      border-radius: 4px;
+      padding: 4px 14px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
       display: none;
     }
-    #live-mode-btn:hover { background: #219a52; }
+    #live-mode-btn:hover { background: var(--seafoam); color: var(--navy); }
 
     /* ── Map ── */
     #map { flex: 1; min-height: 0; }
 
-    /* ── Manager panel (left overlay, desktop) ── */
+    /* ── Manager panel ── */
     #manager-panel {
       position: absolute;
-      top: 100px;
+      top: 104px;
       left: 16px;
       z-index: 1000;
-      background: #1a1d27ee;
-      border: 1px solid #2a2d3a;
-      border-radius: 10px;
+      background: var(--navy2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 14px 16px;
-      width: 280px;
+      width: 290px;
       backdrop-filter: blur(8px);
       max-height: calc(100vh - 120px);
       overflow-y: auto;
       display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
     #manager-panel.open { display: block; }
 
     #drawer-handle {
       display: none;
-      width: 36px;
-      height: 4px;
-      background: #3a3d4a;
+      width: 36px; height: 4px;
+      background: var(--border);
       border-radius: 2px;
       margin: 0 auto 12px;
     }
@@ -192,91 +224,83 @@
       display: flex;
       align-items: center;
       margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
     }
     .panel-header h2 {
-      font-size: 13px;
-      font-weight: 600;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #888;
+      letter-spacing: 1px;
+      color: var(--brass);
       flex: 1;
     }
     .panel-close {
-      background: none;
-      border: none;
-      color: #555;
-      font-size: 20px;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0;
+      background: none; border: none;
+      color: var(--dim); font-size: 20px;
+      line-height: 1; cursor: pointer; padding: 0;
     }
-    .panel-close:hover { color: #e74c3c; }
+    .panel-close:hover { color: var(--danger); }
 
     .manager-section { margin-bottom: 18px; }
     .manager-section h3 {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #444;
+      letter-spacing: 1px;
+      color: var(--dim);
       margin-bottom: 10px;
     }
 
     .form-group { margin-bottom: 10px; }
-    .form-group label {
-      font-size: 12px;
-      color: #888;
-      display: block;
-      margin-bottom: 4px;
-    }
+    .form-group label { font-size: 12px; color: var(--mist); display: block; margin-bottom: 4px; }
     .form-group input[type="text"] {
       width: 100%;
-      background: #0f1117;
-      border: 1px solid #2a2d3a;
-      border-radius: 6px;
-      color: #e0e0e0;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--white);
       padding: 7px 10px;
       font-size: 13px;
       outline: none;
     }
-    .form-group input[type="text"]:focus { border-color: #4a9eff; }
+    .form-group input[type="text"]:focus { border-color: var(--brass); }
 
     .form-color-row { display: flex; align-items: center; gap: 10px; }
     .form-group input[type="color"] {
-      width: 36px;
-      height: 28px;
-      border: 1px solid #2a2d3a;
+      width: 36px; height: 28px;
+      border: 1px solid var(--border);
       border-radius: 5px;
-      background: #0f1117;
-      cursor: pointer;
-      padding: 2px;
-      flex-shrink: 0;
+      background: var(--navy);
+      cursor: pointer; padding: 2px; flex-shrink: 0;
     }
-    #new-boat-color-label { font-size: 12px; color: #666; font-family: monospace; }
+    #new-boat-color-label { font-size: 12px; color: var(--dim); font-family: monospace; }
 
     .btn-primary {
       width: 100%;
-      background: #4a9eff;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
+      background: var(--steel);
+      color: var(--white);
+      border: 1px solid var(--brass);
+      border-radius: 5px;
       padding: 8px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       margin-top: 4px;
+      letter-spacing: 0.3px;
     }
-    .btn-primary:hover { background: #3a8eef; }
-    .btn-primary:disabled { background: #1a3a6f; color: #4a6fa0; cursor: default; }
+    .btn-primary:hover { background: var(--brass); color: var(--navy); }
+    .btn-primary:disabled { background: #0a2040; border-color: var(--border); color: var(--dim); cursor: default; }
 
-    .form-error { font-size: 12px; color: #e74c3c; margin-top: 6px; min-height: 16px; }
+    .form-error { font-size: 12px; color: var(--danger); margin-top: 6px; min-height: 16px; }
 
     .manager-boat-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 7px 4px;
-      border-bottom: 1px solid #1e2130;
+      padding: 8px 4px;
+      border-bottom: 1px solid var(--border);
     }
     .manager-boat-item:last-child { border-bottom: none; }
 
@@ -286,70 +310,154 @@
     .manager-boat-name .name {
       font-size: 13px; font-weight: 500;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--white);
     }
-    .manager-boat-name .mmsi { font-size: 11px; color: #555; }
+    .manager-boat-name .mmsi { font-size: 11px; color: var(--dim); }
 
     .toggle-switch { position: relative; width: 32px; height: 17px; flex-shrink: 0; }
     .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-slider {
-      position: absolute;
-      cursor: pointer;
+      position: absolute; cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: #333;
-      border-radius: 17px;
-      transition: background 0.2s;
+      background: #1a3358; border-radius: 17px; transition: background 0.2s;
     }
     .toggle-slider::before {
       content: "";
       position: absolute;
       width: 11px; height: 11px;
       left: 3px; bottom: 3px;
-      background: #777;
+      background: var(--dim);
       border-radius: 50%;
       transition: transform 0.2s, background 0.2s;
     }
-    .toggle-switch input:checked + .toggle-slider { background: #4a9eff; }
+    .toggle-switch input:checked + .toggle-slider { background: var(--steel); }
     .toggle-switch input:checked + .toggle-slider::before {
-      transform: translateX(15px);
-      background: #fff;
+      transform: translateX(15px); background: var(--brass2);
     }
 
     .btn-sm {
       background: none;
-      border: 1px solid #2a2d3a;
+      border: 1px solid var(--border);
       border-radius: 4px;
-      color: #777;
-      padding: 2px 6px;
+      color: var(--dim);
+      padding: 2px 7px;
       font-size: 11px;
       cursor: pointer;
       flex-shrink: 0;
       white-space: nowrap;
     }
-    .btn-sm:hover { color: #e0e0e0; border-color: #4a4d5a; }
-    .btn-sm.danger:hover { color: #e74c3c; border-color: #e74c3c; }
+    .btn-sm:hover { color: var(--white); border-color: var(--steel); }
+    .btn-sm.danger:hover { color: var(--danger); border-color: var(--danger); }
     .btn-sm:disabled { opacity: 0.4; cursor: default; }
 
-    /* ── Vessel sidebar (right overlay, desktop) ── */
+    /* ── Right sidebar ── */
     #sidebar {
       position: absolute;
-      top: 100px;
+      top: 104px;
       right: 16px;
       z-index: 1000;
-      background: #1a1d27ee;
-      border: 1px solid #2a2d3a;
-      border-radius: 10px;
-      padding: 14px 16px;
-      width: 240px;
+      background: var(--navy2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 256px;
       backdrop-filter: blur(8px);
       max-height: calc(100vh - 120px);
       overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
     }
-    #sidebar h2 {
-      font-size: 13px;
+
+    .sidebar-vessels {
+      flex: 1;
+      padding: 12px 14px;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    /* ── Marine widgets ── */
+    .sidebar-widgets {
+      border-top: 1px solid var(--border);
+      padding: 10px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .widget-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .widget {
+      background: var(--ocean);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 9px;
+    }
+    .widget-label {
+      font-size: 9px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: #888;
+      color: var(--dim);
+      margin-bottom: 3px;
+    }
+    .widget-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--brass2);
+      line-height: 1.1;
+    }
+    .widget-unit {
+      font-size: 10px;
+      color: var(--mist);
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+    }
+    .widget-sub {
+      font-size: 10px;
+      color: var(--mist);
+      margin-top: 1px;
+    }
+    .widget.wide {
+      grid-column: 1 / -1;
+    }
+    .widget-value.loading { color: var(--dim); font-size: 13px; font-family: 'Inter', sans-serif; }
+
+    /* Fishing grounds toggle */
+    #fishing-toggle {
+      background: var(--navy3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--mist);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #fishing-toggle:hover { border-color: var(--brass); color: var(--brass2); }
+    #fishing-toggle.active { border-color: var(--brass); color: var(--brass2); background: #1a1400; }
+    #fishing-toggle .fish-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--dim); flex-shrink: 0;
+    }
+    #fishing-toggle.active .fish-dot { background: var(--brass2); }
+
+    #sidebar h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--brass);
       margin-bottom: 10px;
     }
 
@@ -357,60 +465,81 @@
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      padding: 8px 10px;
-      border-radius: 7px;
+      padding: 10px 10px;
+      border-radius: 6px;
       cursor: pointer;
       transition: background 0.15s;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      border: 1px solid transparent;
     }
-    .boat-card:hover { background: #2a2d3a; }
+    .boat-card:hover { background: var(--navy3); border-color: var(--border); }
+    .boat-card.solo-active {
+      background: var(--ocean);
+      border: 1px solid var(--brass);
+    }
 
-    .boat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; margin-top: 4px; }
+    .boat-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      flex-shrink: 0; cursor: pointer;
+      margin-top: 3px;
+      border: 2px solid rgba(255,255,255,0.3);
+      transition: opacity 0.15s;
+    }
     .boat-dot:hover { opacity: 0.75; }
     .boat-info { flex: 1; min-width: 0; }
     .boat-name {
-      font-size: 14px; font-weight: 500;
+      font-size: 15px; font-weight: 600;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--white);
     }
-    .boat-mmsi { font-size: 11px; color: #666; margin-top: 1px; }
-    .boat-last-seen { font-size: 11px; color: #555; margin-top: 2px; }
+    .boat-mmsi { font-size: 10px; color: var(--dim); margin-top: 1px; letter-spacing: 0.3px; }
+    .boat-last-seen { font-size: 10px; color: var(--dim); margin-top: 3px; }
 
     .style-select {
-      background: #0f1117;
-      border: 1px solid #2a2d3a;
-      border-radius: 4px;
-      color: #777;
-      font-size: 11px;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--dim);
+      font-size: 10px;
       padding: 2px 4px;
       cursor: pointer;
       outline: none;
       margin-top: 4px;
       display: block;
     }
-    .style-select:focus { border-color: #4a9eff; }
+    .style-select:focus { border-color: var(--brass); }
 
     .boat-speed-dist {
       text-align: right;
       flex-shrink: 0;
     }
-    .boat-speed { font-size: 12px; color: #aaa; }
-    .boat-dist { font-size: 11px; color: #777; margin-top: 2px; white-space: nowrap; }
+    .boat-speed { font-size: 13px; color: var(--mist); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; }
+    .boat-dist { font-size: 10px; color: var(--dim); margin-top: 2px; white-space: nowrap; }
 
-    .boat-card.solo-active {
-      background: #1e2a3a;
-      border: 1px solid #4a9eff55;
+    #no-boats { font-size: 13px; color: var(--dim); text-align: center; padding: 8px 0; }
+
+    /* ── Fishing grounds markers ── */
+    .fishing-ground-label {
+      background: rgba(11, 26, 46, 0.9);
+      border: 1px solid var(--brass);
+      border-radius: 4px;
+      color: var(--brass2);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 3px 7px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
-
-    #no-boats { font-size: 13px; color: #555; text-align: center; padding: 8px 0; }
 
     /* ── Leaflet overrides ── */
     .leaflet-tooltip.boat-name-label {
-      background: rgba(26, 29, 39, 0.92);
-      border: 1px solid #2a2d3a;
+      background: rgba(17, 34, 64, 0.95);
+      border: 1px solid var(--brass);
       border-radius: 4px;
-      color: #e0e0e0;
+      color: var(--white);
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       padding: 2px 7px;
       box-shadow: none;
       white-space: nowrap;
@@ -418,58 +547,56 @@
     .leaflet-tooltip.boat-name-label::before { display: none; }
 
     .leaflet-tooltip.coord-tip {
-      background: rgba(15, 17, 23, 0.94);
-      border: 1px solid #2a2d3a;
+      background: rgba(11, 26, 46, 0.96);
+      border: 1px solid var(--border);
       border-radius: 5px;
-      color: #aaa;
+      color: var(--mist);
       font-size: 11px;
       font-family: monospace;
       padding: 5px 9px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
       pointer-events: none;
       line-height: 1.6;
       white-space: nowrap;
     }
     .leaflet-tooltip.coord-tip::before { display: none; }
 
-    /* Dark popup theme */
     .leaflet-popup-content-wrapper {
-      background: #1a1d27;
-      border: 1px solid #2a2d3a;
+      background: var(--navy2);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #e0e0e0;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      color: var(--white);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
     }
-    .leaflet-popup-tip { background: #1a1d27; }
-    .leaflet-popup-close-button { color: #555 !important; font-size: 18px !important; top: 6px !important; right: 8px !important; }
-    .leaflet-popup-close-button:hover { color: #e74c3c !important; }
+    .leaflet-popup-tip { background: var(--navy2); }
+    .leaflet-popup-close-button { color: var(--dim) !important; font-size: 18px !important; top: 6px !important; right: 8px !important; }
+    .leaflet-popup-close-button:hover { color: var(--danger) !important; }
     .leaflet-popup-content { margin: 12px 14px; line-height: 1.5; }
 
-    /* Save note form inside popup */
     .save-form { min-width: 210px; }
-    .save-form .sf-coords { font-size: 11px; color: #666; margin-bottom: 10px; font-family: monospace; }
+    .save-form .sf-coords { font-size: 11px; color: var(--dim); margin-bottom: 10px; font-family: monospace; }
     .save-form .sf-field { margin-bottom: 8px; }
-    .save-form .sf-label { font-size: 12px; color: #888; display: block; margin-bottom: 3px; }
+    .save-form .sf-label { font-size: 12px; color: var(--mist); display: block; margin-bottom: 3px; }
     .save-form input[type="text"],
     .save-form textarea {
       width: 100%;
-      background: #0f1117;
-      border: 1px solid #2a2d3a;
+      background: var(--navy);
+      border: 1px solid var(--border);
       border-radius: 5px;
-      color: #e0e0e0;
+      color: var(--white);
       padding: 5px 8px;
       font-size: 13px;
       outline: none;
       font-family: inherit;
     }
     .save-form input[type="text"]:focus,
-    .save-form textarea:focus { border-color: #4a9eff; }
+    .save-form textarea:focus { border-color: var(--brass); }
     .save-form textarea { resize: vertical; min-height: 60px; }
     .save-form .sf-btn {
       width: 100%;
-      background: #4a9eff;
-      color: #fff;
-      border: none;
+      background: var(--steel);
+      color: var(--white);
+      border: 1px solid var(--brass);
       border-radius: 5px;
       padding: 7px;
       font-size: 13px;
@@ -477,41 +604,35 @@
       cursor: pointer;
       margin-top: 2px;
     }
-    .save-form .sf-btn:hover { background: #3a8eef; }
-    .save-form .sf-btn:disabled { background: #1a3a6f; color: #4a6fa0; cursor: default; }
-    .save-form .sf-err { font-size: 11px; color: #e74c3c; margin-top: 4px; min-height: 14px; }
+    .save-form .sf-btn:hover { background: var(--brass); color: var(--navy); }
+    .save-form .sf-btn:disabled { opacity: 0.5; cursor: default; }
+    .save-form .sf-err { font-size: 11px; color: var(--danger); margin-top: 4px; min-height: 14px; }
 
-    /* Saved point popup */
-    .point-popup .pt-name { font-weight: 600; color: #f5a623; }
-    .point-popup .pt-coords { font-size: 10px; color: #555; font-family: monospace; margin-top: 2px; }
-    .point-popup .pt-notes { margin-top: 6px; font-size: 12px; color: #bbb; white-space: pre-wrap; word-break: break-word; }
-    .point-popup .pt-date { font-size: 10px; color: #444; margin-top: 6px; }
+    .point-popup .pt-name { font-weight: 600; color: var(--brass2); }
+    .point-popup .pt-coords { font-size: 10px; color: var(--dim); font-family: monospace; margin-top: 2px; }
+    .point-popup .pt-notes { margin-top: 6px; font-size: 12px; color: var(--mist); white-space: pre-wrap; word-break: break-word; }
+    .point-popup .pt-date { font-size: 10px; color: var(--dim); margin-top: 6px; }
 
-    /* ── Mobile layout ── */
+    /* ── Mobile ── */
     @media (max-width: 767px) {
-      header { padding: 8px 12px; }
-      header h1 { font-size: 15px; }
+      header { padding: 0 12px; }
+      header h1 { font-size: 18px; }
       #status-text { display: none; }
 
       #date-bar { padding: 5px 10px; gap: 6px; }
-      #date-inputs { gap: 6px; }
+      #date-inputs { gap: 5px; }
       .date-group { flex: 1; min-width: 0; }
       .date-group label { display: none; }
       .date-group input[type="datetime-local"] { font-size: 11px; padding: 4px 5px; width: 100%; }
-      #load-track-btn { padding: 5px 10px; font-size: 12px; }
-      #live-mode-btn { padding: 5px 10px; font-size: 12px; }
+      #load-track-btn, #live-mode-btn { padding: 4px 10px; font-size: 11px; }
 
-      /* Manager becomes bottom drawer */
       #manager-panel {
         position: fixed !important;
-        top: auto !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
+        top: auto !important; bottom: 0 !important;
+        left: 0 !important; right: 0 !important;
         width: 100% !important;
         max-height: 72vh;
         border-radius: 14px 14px 0 0;
-        border: 1px solid #2a2d3a;
         border-bottom: none;
         display: block !important;
         transform: translateY(110%);
@@ -523,25 +644,28 @@
       #manager-panel.open { transform: translateY(0); }
       #drawer-handle { display: block; }
 
-      /* Vessel sidebar becomes bottom strip */
       #sidebar {
         position: fixed !important;
-        top: auto !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
+        top: auto !important; bottom: 0 !important;
+        left: 0 !important; right: 0 !important;
         width: 100% !important;
-        height: 64px;
         max-height: none;
         border-radius: 0;
         border: none;
-        border-top: 1px solid #2a2d3a;
-        padding: 0 10px;
-        display: flex !important;
+        border-top: 2px solid var(--brass);
+        z-index: 900;
+        flex-direction: column;
+      }
+      .sidebar-widgets { display: none; }
+      .sidebar-vessels {
+        display: flex;
         flex-direction: row;
         align-items: center;
-        overflow: hidden;
-        z-index: 900;
+        padding: 0 10px;
+        height: 68px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
       }
       #sidebar h2 { display: none; }
       #boat-list {
@@ -549,36 +673,37 @@
         flex-direction: row;
         gap: 6px;
         align-items: center;
-        overflow-x: auto;
-        overflow-y: hidden;
         flex: 1;
         padding: 6px 0;
-        -webkit-overflow-scrolling: touch;
       }
       #no-boats { white-space: nowrap; font-size: 12px; padding: 0; }
       .boat-card {
         flex-shrink: 0;
-        min-width: 100px;
+        min-width: 110px;
         margin-bottom: 0;
-        padding: 4px 8px;
-        height: 48px;
-        background: #1e2130;
+        padding: 6px 8px;
         align-items: center;
+        height: 52px;
+        background: var(--navy3);
       }
       .boat-name { font-size: 12px; }
       .boat-mmsi { font-size: 10px; }
-      .boat-speed { font-size: 11px; }
-      .boat-dist { display: none; }
-      .boat-last-seen { display: none; }
-      .style-select { display: none; }
+      .boat-dist, .boat-last-seen, .style-select { display: none; }
 
-      #map { margin-bottom: 64px; }
+      #map { margin-bottom: 68px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>AIS <span>Tracker</span></h1>
+    <div class="header-brand">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+        <path d="M13 3 L5 18 L13 15 L21 18 Z" fill="#c9a227" stroke="#e8b830" stroke-width="0.5"/>
+        <rect x="12.5" y="3" width="1" height="15" fill="#c9a227"/>
+        <path d="M5 18 Q13 22 21 18 L21 21 Q13 25 5 21 Z" fill="#0d3b5e" stroke="#1e4d7a" stroke-width="0.5"/>
+      </svg>
+      <h1>SD <span>Fish</span> Tracker</h1>
+    </div>
     <button id="manage-btn" onclick="toggleManager()">Manage</button>
     <div id="status">
       <div id="status-dot"></div>
@@ -601,7 +726,7 @@
         <input type="datetime-local" id="date-end" />
       </div>
       <button id="load-track-btn" onclick="applyFilter()">Load Track</button>
-      <button id="live-mode-btn" onclick="enterLiveMode()">Live Mode</button>
+      <button id="live-mode-btn" onclick="enterLiveMode()">&#9679; Live</button>
     </div>
   </div>
 
@@ -611,7 +736,7 @@
   <div id="manager-panel">
     <div id="drawer-handle"></div>
     <div class="panel-header">
-      <h2>Boat Manager</h2>
+      <h2>Vessel Manager</h2>
       <button class="panel-close" onclick="toggleManager()" title="Close">&times;</button>
     </div>
 
@@ -629,8 +754,8 @@
         <div class="form-group">
           <label>Track Color</label>
           <div class="form-color-row">
-            <input type="color" id="new-boat-color" value="#3388ff" />
-            <span id="new-boat-color-label">#3388ff</span>
+            <input type="color" id="new-boat-color" value="#c9a227" />
+            <span id="new-boat-color-label">#c9a227</span>
           </div>
         </div>
         <button type="submit" class="btn-primary" id="add-boat-btn">Add Vessel</button>
@@ -644,10 +769,42 @@
     </div>
   </div>
 
-  <!-- Vessel sidebar -->
+  <!-- Right sidebar: vessels + widgets -->
   <div id="sidebar">
-    <h2>Vessels</h2>
-    <div id="boat-list"><div id="no-boats">No vessels tracked</div></div>
+    <div class="sidebar-vessels">
+      <h2>Vessels</h2>
+      <div id="boat-list"><div id="no-boats">No vessels tracked</div></div>
+    </div>
+    <div class="sidebar-widgets">
+      <div class="widget-row">
+        <div class="widget" id="w-tide">
+          <div class="widget-label">Tide (SD Bay)</div>
+          <div class="widget-value loading" id="tide-val">...</div>
+          <div class="widget-sub" id="tide-sub"></div>
+        </div>
+        <div class="widget" id="w-sst">
+          <div class="widget-label">Sea Temp</div>
+          <div class="widget-value loading" id="sst-val">...</div>
+          <div class="widget-sub" id="sst-sub"></div>
+        </div>
+      </div>
+      <div class="widget-row">
+        <div class="widget" id="w-wind">
+          <div class="widget-label">Wind (46225)</div>
+          <div class="widget-value loading" id="wind-val">...</div>
+          <div class="widget-sub" id="wind-sub"></div>
+        </div>
+        <div class="widget" id="w-sun">
+          <div class="widget-label">Sun (SD)</div>
+          <div class="widget-value loading" id="sun-val">...</div>
+          <div class="widget-sub" id="sun-sub"></div>
+        </div>
+      </div>
+      <button id="fishing-toggle" onclick="toggleFishingGrounds()">
+        <span class="fish-dot"></span>
+        Fishing Grounds
+      </button>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -657,9 +814,16 @@
 
     const map = L.map("map", { center: SAN_DIEGO, zoom: 11 });
 
+    // OpenStreetMap base layer with nautical OpenSeaMap overlay
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
+    }).addTo(map);
+
+    L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openseamap.org">OpenSeaMap</a>',
+      maxZoom: 18,
+      opacity: 0.8,
     }).addTo(map);
 
     // State
@@ -672,7 +836,17 @@
     let boats = [];
     let cachedLatestMap = {};
     let refreshInterval = null;
+    let fishingGroundsVisible = false;
+    const fishingGroundLayers = [];
     const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [14, 0] });
+
+    const FISHING_GROUNDS = [
+      { name: "43 Fathom Bank",  lat: 32.55,  lon: -117.48 },
+      { name: "9 Mile Bank",     lat: 32.58,  lon: -117.47 },
+      { name: "60 Mile Bank",    lat: 31.88,  lon: -118.58 },
+      { name: "Cortez Bank",     lat: 31.68,  lon: -119.05 },
+      { name: "Tanner Bank",     lat: 32.70,  lon: -119.08 },
+    ];
 
     // ── Utilities ────────────────────────────────────────────────────────────
 
@@ -716,12 +890,12 @@
     function formatLastSeen(timestamp) {
       if (!timestamp) return "No data yet";
       const diffMin = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
-      if (diffMin < 1) return "Last seen: just now";
-      if (diffMin < 60) return `Last seen: ${diffMin} min ago`;
+      if (diffMin < 1) return "Just now";
+      if (diffMin < 60) return `${diffMin} min ago`;
       const diffHrs = Math.floor(diffMin / 60);
-      if (diffHrs < 24) return `Last seen: ${diffHrs} hr${diffHrs !== 1 ? "s" : ""} ago`;
+      if (diffHrs < 24) return `${diffHrs} hr${diffHrs !== 1 ? "s" : ""} ago`;
       const diffDays = Math.floor(diffHrs / 24);
-      return `Last seen: ${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+      return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
     }
 
     function applySoloMode() {
@@ -738,8 +912,7 @@
     }
 
     function nearestPoint(positions, lat, lng) {
-      let nearest = null;
-      let minDist = Infinity;
+      let nearest = null, minDist = Infinity;
       for (const p of positions) {
         const d = (p.lat - lat) ** 2 + (p.lon - lng) ** 2;
         if (d < minDist) { minDist = d; nearest = p; }
@@ -750,12 +923,12 @@
     function makeBoatIcon(color) {
       return L.divIcon({
         className: "",
-        html: `<svg width="18" height="18" viewBox="0 0 18 18">
-          <circle cx="9" cy="9" r="7" fill="${color}" stroke="#fff" stroke-width="2"/>
-          <circle cx="9" cy="9" r="3" fill="#fff" opacity="0.7"/>
+        html: `<svg width="20" height="20" viewBox="0 0 20 20">
+          <circle cx="10" cy="10" r="8" fill="${color}" stroke="#fff" stroke-width="2"/>
+          <circle cx="10" cy="10" r="3.5" fill="#fff" opacity="0.8"/>
         </svg>`,
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
       });
     }
 
@@ -764,12 +937,23 @@
         className: "",
         html: `<svg width="22" height="28" viewBox="0 0 22 28">
           <path d="M11 0C6.03 0 2 4.03 2 9c0 6.75 9 19 9 19s9-12.25 9-19c0-4.97-4.03-9-9-9z"
-                fill="#f5a623" stroke="#fff" stroke-width="1.5"/>
+                fill="#c9a227" stroke="#fff" stroke-width="1.5"/>
           <circle cx="11" cy="9" r="3.5" fill="#fff"/>
         </svg>`,
         iconSize: [22, 28],
         iconAnchor: [11, 28],
         popupAnchor: [0, -30],
+      });
+    }
+
+    function makeFishingGroundIcon() {
+      return L.divIcon({
+        className: "",
+        html: `<svg width="12" height="12" viewBox="0 0 12 12">
+          <circle cx="6" cy="6" r="5" fill="#c9a22740" stroke="#c9a227" stroke-width="1.5"/>
+        </svg>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
       });
     }
 
@@ -779,6 +963,33 @@
       layers.polyline.remove();
       layers.marker.remove();
       delete boatLayers[mmsi];
+    }
+
+    // ── Fishing grounds ──────────────────────────────────────────────────────
+
+    function toggleFishingGrounds() {
+      const btn = document.getElementById("fishing-toggle");
+      fishingGroundsVisible = !fishingGroundsVisible;
+      btn.classList.toggle("active", fishingGroundsVisible);
+
+      if (fishingGroundsVisible) {
+        for (const ground of FISHING_GROUNDS) {
+          const marker = L.marker([ground.lat, ground.lon], {
+            icon: makeFishingGroundIcon(),
+            zIndexOffset: -20,
+          }).addTo(map);
+          marker.bindTooltip(ground.name, {
+            permanent: true,
+            direction: "top",
+            offset: [0, -8],
+            className: "fishing-ground-label",
+          });
+          fishingGroundLayers.push(marker);
+        }
+      } else {
+        for (const m of fishingGroundLayers) m.remove();
+        fishingGroundLayers.length = 0;
+      }
     }
 
     // ── Auto-refresh ─────────────────────────────────────────────────────────
@@ -819,7 +1030,6 @@
       filterActive = !!(filterStart || filterEnd);
       if (filterActive) {
         stopAutoRefresh();
-        // Hide all other boats, show only selected with filtered positions
         for (const mmsi of Object.keys(boatLayers)) {
           if (mmsi !== soloMmsi) removeBoatFromMap(mmsi);
         }
@@ -867,7 +1077,6 @@
 
       if (positions.length === 0) return null;
 
-      // API returns newest-first; reverse for chronological draw order
       const ordered = [...positions].reverse();
       const latLngs = ordered.map(p => [p.lat, p.lon]);
 
@@ -877,7 +1086,7 @@
       const polyline = L.polyline(latLngs, {
         color: boat.color,
         weight: 3,
-        opacity: 0.85,
+        opacity: 0.9,
         dashArray,
       }).addTo(map);
 
@@ -899,12 +1108,12 @@
 
       const latest = ordered[ordered.length - 1];
       const tsStr = latest.timestamp
-        ? `<br><span style="font-size:11px;color:#888">${formatTs(latest.timestamp)}</span>`
+        ? `<br><span style="font-size:11px;color:#7a9abc">${formatTs(latest.timestamp)}</span>`
         : "";
       const marker = L.marker([latest.lat, latest.lon], { icon: makeBoatIcon(boat.color) })
         .addTo(map)
         .bindPopup(
-          `<b>${boat.name}</b><br>MMSI: ${boat.mmsi}` +
+          `<b style="color:${boat.color}">${boat.name}</b><br>MMSI: ${boat.mmsi}` +
           `<br>Speed: ${latest.speed?.toFixed(1) ?? "—"} kn${tsStr}`
         );
 
@@ -924,7 +1133,6 @@
     async function loadSavedPoints() {
       for (const m of savedPointLayers) m.remove();
       savedPointLayers.length = 0;
-
       try {
         const res = await fetch("/api/points");
         const points = await res.json();
@@ -938,19 +1146,17 @@
             <div class="pt-date">${new Date(pt.created_at).toLocaleString()}</div>
           `;
           const marker = L.marker([pt.lat, pt.lon], {
-            icon: makePinIcon(),
-            zIndexOffset: -10,
+            icon: makePinIcon(), zIndexOffset: -10,
           }).addTo(map).bindPopup(div);
           savedPointLayers.push(marker);
         }
       } catch {}
     }
 
-    // ── Click-to-save note popup ─────────────────────────────────────────────
+    // ── Click-to-save ────────────────────────────────────────────────────────
 
     map.on("click", function(e) {
       const { lat, lng } = e.latlng;
-
       const div = document.createElement("div");
       div.className = "save-form";
       div.innerHTML = `
@@ -966,12 +1172,10 @@
         <button class="sf-btn">Save</button>
         <div class="sf-err"></div>
       `;
-
       const nameInput = div.querySelector(".sf-name");
       const notesInput = div.querySelector(".sf-notes");
       const saveBtn = div.querySelector(".sf-btn");
       const errDiv = div.querySelector(".sf-err");
-
       saveBtn.addEventListener("click", async () => {
         const name = nameInput.value.trim();
         const notes = notesInput.value.trim();
@@ -983,25 +1187,13 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ lat, lon: lng, name, notes }),
           });
-          if (res.ok) {
-            map.closePopup();
-            await loadSavedPoints();
-          } else {
-            errDiv.textContent = "Save failed";
-            saveBtn.disabled = false;
-            saveBtn.textContent = "Save";
-          }
+          if (res.ok) { map.closePopup(); await loadSavedPoints(); }
+          else { errDiv.textContent = "Save failed"; saveBtn.disabled = false; saveBtn.textContent = "Save"; }
         } catch {
-          errDiv.textContent = "Network error";
-          saveBtn.disabled = false;
-          saveBtn.textContent = "Save";
+          errDiv.textContent = "Network error"; saveBtn.disabled = false; saveBtn.textContent = "Save";
         }
       });
-
-      L.popup({ maxWidth: 260 })
-        .setLatLng(e.latlng)
-        .setContent(div)
-        .openOn(map);
+      L.popup({ maxWidth: 260 }).setLatLng(e.latlng).setContent(div).openOn(map);
     });
 
     // ── Sidebar rendering ────────────────────────────────────────────────────
@@ -1096,10 +1288,7 @@
         card.addEventListener("click", () => {
           if (soloMmsi === boat.mmsi) {
             soloMmsi = null;
-            if (filterActive) {
-              enterLiveMode();
-              return;
-            }
+            if (filterActive) { enterLiveMode(); return; }
           } else {
             soloMmsi = boat.mmsi;
             const layer = boatLayers[boat.mmsi];
@@ -1116,16 +1305,14 @@
 
     // ── Manager panel rendering ──────────────────────────────────────────────
 
-    function renderManagerList(boats) {
+    function renderManagerList(boatList) {
       const list = document.getElementById("manager-boat-list");
       list.innerHTML = "";
-
-      if (boats.length === 0) {
-        list.innerHTML = '<div style="font-size:13px;color:#555;padding:6px 0">No vessels added yet</div>';
+      if (boatList.length === 0) {
+        list.innerHTML = '<div style="font-size:13px;color:var(--dim);padding:6px 0">No vessels added yet</div>';
         return;
       }
-
-      for (const boat of boats) {
+      for (const boat of boatList) {
         const item = document.createElement("div");
         item.className = "manager-boat-item";
         item.innerHTML = `
@@ -1141,25 +1328,20 @@
           <button class="btn-sm backfill-btn" title="Fetch last 24h of positions">Backfill</button>
           <button class="btn-sm danger delete-btn" title="Delete vessel">Del</button>
         `;
-
         const checkbox = item.querySelector("input[type=checkbox]");
         checkbox.addEventListener("change", async () => {
           checkbox.disabled = true;
           try {
             const res = await fetch(`/api/boats/${boat.mmsi}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
+              method: "PUT", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ active: checkbox.checked }),
             });
-            if (res.ok) await refresh();
-            else checkbox.checked = !checkbox.checked;
+            if (res.ok) await refresh(); else checkbox.checked = !checkbox.checked;
           } finally { checkbox.disabled = false; }
         });
-
         const backfillBtn = item.querySelector(".backfill-btn");
         backfillBtn.addEventListener("click", async () => {
-          backfillBtn.textContent = "...";
-          backfillBtn.disabled = true;
+          backfillBtn.textContent = "..."; backfillBtn.disabled = true;
           try {
             const res = await fetch(`/api/boats/${boat.mmsi}/backfill`, { method: "POST" });
             const data = await res.json();
@@ -1171,7 +1353,6 @@
             setTimeout(() => { backfillBtn.textContent = "Backfill"; }, 2000);
           } finally { backfillBtn.disabled = false; }
         });
-
         const deleteBtn = item.querySelector(".delete-btn");
         deleteBtn.addEventListener("click", async () => {
           if (!confirm(`Delete "${boat.name}"? This will also remove all recorded positions.`)) return;
@@ -1181,7 +1362,6 @@
             if (res.ok) { removeBoatFromMap(boat.mmsi); await refresh(); }
           } finally { deleteBtn.disabled = false; }
         });
-
         list.appendChild(item);
       }
     }
@@ -1190,7 +1370,6 @@
 
     async function refresh() {
       if (filterActive) return;
-
       try {
         const res = await fetch("/api/boats");
         boats = await res.json();
@@ -1198,18 +1377,14 @@
         setStatus("error", "Connection error");
         return;
       }
-
       const currentMmsis = new Set(boats.map(b => b.mmsi));
       for (const mmsi of Object.keys(boatLayers)) {
         if (!currentMmsis.has(mmsi)) removeBoatFromMap(mmsi);
       }
-
       cachedLatestMap = {};
       let anyPosition = false;
-
       const activeSet = new Set(boats.filter(b => b.active).map(b => b.mmsi));
       if (soloMmsi && !activeSet.has(soloMmsi)) soloMmsi = null;
-
       for (const boat of boats) {
         if (!boat.active) {
           removeBoatFromMap(boat.mmsi);
@@ -1219,13 +1394,11 @@
           if (latest) anyPosition = true;
         }
       }
-
       const activeBoats = boats.filter(b => b.active);
       renderVesselSidebar(activeBoats, cachedLatestMap);
       renderManagerList(boats);
       applySoloMode();
       updateDateBarUI();
-
       if (anyPosition) {
         setStatus("live", "Live");
       } else if (boats.some(b => b.active)) {
@@ -1248,22 +1421,19 @@
       const color = document.getElementById("new-boat-color").value;
       const errEl = document.getElementById("add-error");
       const btn = document.getElementById("add-boat-btn");
-
       errEl.textContent = "";
       btn.disabled = true;
       btn.textContent = "Adding...";
-
       try {
         const res = await fetch("/api/boats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, mmsi, color }),
         });
         if (res.ok) {
           document.getElementById("new-boat-name").value = "";
           document.getElementById("new-boat-mmsi").value = "";
-          document.getElementById("new-boat-color").value = "#3388ff";
-          document.getElementById("new-boat-color-label").textContent = "#3388ff";
+          document.getElementById("new-boat-color").value = "#c9a227";
+          document.getElementById("new-boat-color-label").textContent = "#c9a227";
           await refresh();
         } else {
           const data = await res.json();
@@ -1277,10 +1447,125 @@
       }
     });
 
-    // Initial load
+    // ── Marine widgets ───────────────────────────────────────────────────────
+
+    async function loadTide() {
+      // NOAA Tides & Currents API — station 9410170 (San Diego Bay)
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const today = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+      const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9410170&product=water_level&datum=MLLW&time_zone=lst_ldt&units=english&format=json&date=today`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const readings = data.data;
+        if (!readings || readings.length === 0) throw new Error();
+        const latest = readings[readings.length - 1];
+        const ft = parseFloat(latest.v).toFixed(1);
+        document.getElementById("tide-val").textContent = ft;
+        document.getElementById("tide-val").classList.remove("loading");
+        document.getElementById("tide-val").innerHTML = `${ft} <span class="widget-unit">ft</span>`;
+        document.getElementById("tide-sub").textContent = "MLLW · SD Bay";
+      } catch {
+        document.getElementById("tide-val").textContent = "N/A";
+        document.getElementById("tide-val").classList.remove("loading");
+      }
+    }
+
+    async function loadBuoyData() {
+      // NOAA NDBC buoy 46225 (Santa Monica Basin, nearest to SD offshore)
+      // Using text data endpoint
+      const url = "https://www.ndbc.noaa.gov/data/realtime2/46225.txt";
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        const lines = text.trim().split('\n');
+        // Skip 2 header lines, get most recent (line 2)
+        if (lines.length < 3) throw new Error();
+        const parts = lines[2].trim().split(/\s+/);
+        // Columns: YY MM DD hh mm WDIR WSPD GST WVHT DPD APD MWD PRES ATMP WTMP DEWP VIS PTDY TIDE
+        const wdir = parts[5];  // wind direction degrees
+        const wspd = parts[6];  // wind speed m/s
+        const wtmp = parts[14]; // water temp °C
+
+        const wspdKts = wspd !== 'MM' ? (parseFloat(wspd) * 1.944).toFixed(0) : null;
+        const wtmpF   = wtmp !== 'MM' ? (parseFloat(wtmp) * 9/5 + 32).toFixed(1) : null;
+        const cardinals = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        const wdirCard = wdir !== 'MM' ? cardinals[Math.round(parseInt(wdir) / 22.5) % 16] : null;
+
+        if (wspdKts !== null) {
+          document.getElementById("wind-val").innerHTML = `${wspdKts} <span class="widget-unit">kts</span>`;
+          document.getElementById("wind-val").classList.remove("loading");
+          document.getElementById("wind-sub").textContent = wdirCard ? `From ${wdirCard}` : "46225";
+        } else {
+          document.getElementById("wind-val").textContent = "N/A";
+          document.getElementById("wind-val").classList.remove("loading");
+        }
+
+        if (wtmpF !== null) {
+          document.getElementById("sst-val").innerHTML = `${wtmpF} <span class="widget-unit">°F</span>`;
+          document.getElementById("sst-val").classList.remove("loading");
+          document.getElementById("sst-sub").textContent = "Buoy 46225";
+        } else {
+          document.getElementById("sst-val").textContent = "N/A";
+          document.getElementById("sst-val").classList.remove("loading");
+        }
+      } catch {
+        document.getElementById("wind-val").textContent = "N/A";
+        document.getElementById("wind-val").classList.remove("loading");
+        document.getElementById("sst-val").textContent = "N/A";
+        document.getElementById("sst-val").classList.remove("loading");
+      }
+    }
+
+    function loadSunTimes() {
+      // Sunrise/sunset for San Diego using SunCalc algorithm (built-in, no API needed)
+      const lat = 32.7157, lon = -117.1611;
+      const now = new Date();
+      const { rise, set } = sunCalc(now, lat, lon);
+      const fmt = d => d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+      document.getElementById("sun-val").innerHTML = `${fmt(rise)}`;
+      document.getElementById("sun-val").classList.remove("loading");
+      document.getElementById("sun-sub").textContent = `Set ${fmt(set)}`;
+    }
+
+    // Minimal SunCalc — returns sunrise/sunset as Date objects for given date and location
+    function sunCalc(date, lat, lon) {
+      const rad = Math.PI / 180;
+      const J2000 = 2451545.0;
+      const toJD = d => (d.getTime() / 86400000) + 2440587.5;
+
+      const jd = toJD(date);
+      const n = Math.ceil(jd - J2000 - 0.0009 + lon / 360);
+      const Jstar = J2000 + 0.0009 - lon / 360 + n;
+      const M = (357.5291 + 0.98560028 * (Jstar - J2000)) % 360;
+      const C = 1.9148 * Math.sin(M * rad) + 0.0200 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+      const λ = (M + C + 180 + 102.9372) % 360;
+      const Jtransit = Jstar + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * λ * rad);
+      const sinδ = Math.sin(λ * rad) * Math.sin(23.4397 * rad);
+      const cosH = (Math.sin(-0.8333 * rad) - Math.sin(lat * rad) * sinδ) / (Math.cos(lat * rad) * Math.cos(Math.asin(sinδ)));
+      if (cosH < -1 || cosH > 1) return { rise: null, set: null };
+      const H = Math.acos(cosH) / rad;
+      const fromJD = j => new Date((j - 2440587.5) * 86400000);
+      return {
+        rise: fromJD(Jtransit - H / 360),
+        set: fromJD(Jtransit + H / 360),
+      };
+    }
+
+    async function loadWidgets() {
+      loadSunTimes();
+      await Promise.allSettled([loadTide(), loadBuoyData()]);
+    }
+
+    // ── Initial load ─────────────────────────────────────────────────────────
+
     refresh();
     loadSavedPoints();
+    loadWidgets();
     startAutoRefresh();
+    // Refresh widgets every 15 minutes
+    setInterval(loadWidgets, 15 * 60 * 1000);
   </script>
 </body>
 </html>
