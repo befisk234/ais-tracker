@@ -267,12 +267,14 @@ class BoatCreate(BaseModel):
     name: str
     mmsi: str
     color: str = "#3388ff"
+    track_style: str = "solid"
 
 
 class BoatUpdate(BaseModel):
     name: str | None = None
     color: str | None = None
     active: bool | None = None
+    track_style: str | None = None
 
 
 @app.get("/api/boats")
@@ -280,7 +282,7 @@ async def list_boats():
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT id, name, mmsi, color, active, created_at FROM boats ORDER BY created_at"
+            "SELECT id, name, mmsi, color, track_style, active, created_at FROM boats ORDER BY created_at"
         )
     return [dict(r) for r in rows]
 
@@ -291,8 +293,8 @@ async def add_boat(boat: BoatCreate):
     async with pool.acquire() as conn:
         try:
             row = await conn.fetchrow(
-                "INSERT INTO boats (name, mmsi, color) VALUES ($1, $2, $3) RETURNING id, name, mmsi, color, active, created_at",
-                boat.name, boat.mmsi, boat.color,
+                "INSERT INTO boats (name, mmsi, color, track_style) VALUES ($1, $2, $3, $4) RETURNING id, name, mmsi, color, track_style, active, created_at",
+                boat.name, boat.mmsi, boat.color, boat.track_style,
             )
         except asyncpg.UniqueViolationError:
             raise HTTPException(status_code=409, detail="MMSI already registered")
@@ -314,6 +316,9 @@ async def update_boat(mmsi: str, update: BoatUpdate):
     if update.active is not None:
         fields.append(f"active = ${len(values) + 1}")
         values.append(update.active)
+    if update.track_style is not None:
+        fields.append(f"track_style = ${len(values) + 1}")
+        values.append(update.track_style)
 
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")
@@ -322,7 +327,7 @@ async def update_boat(mmsi: str, update: BoatUpdate):
     pool = await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            f"UPDATE boats SET {', '.join(fields)} WHERE mmsi = ${len(values)} RETURNING id, name, mmsi, color, active, created_at",
+            f"UPDATE boats SET {', '.join(fields)} WHERE mmsi = ${len(values)} RETURNING id, name, mmsi, color, track_style, active, created_at",
             *values,
         )
     if not row:

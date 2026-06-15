@@ -92,7 +92,22 @@
       gap: 10px;
       flex-shrink: 0;
       flex-wrap: wrap;
+      min-height: 42px;
     }
+
+    #no-vessel-msg {
+      font-size: 13px;
+      color: #444;
+      font-style: italic;
+    }
+
+    #date-inputs {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .date-group {
       display: flex;
       align-items: center;
@@ -129,29 +144,19 @@
     }
     #load-track-btn:hover { background: #3a8eef; }
 
-    #clear-filter-btn {
-      background: transparent;
-      border: 1px solid #2a2d3a;
+    #live-mode-btn {
+      background: #27ae60;
+      color: #fff;
+      border: none;
       border-radius: 6px;
-      color: #555;
-      padding: 5px 12px;
-      font-size: 12px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
-    }
-    #clear-filter-btn:hover { color: #e0e0e0; border-color: #4a4d5a; }
-
-    #filter-badge {
-      font-size: 11px;
-      color: #4a9eff;
-      background: #4a9eff22;
-      border: 1px solid #4a9eff44;
-      border-radius: 4px;
-      padding: 2px 8px;
       display: none;
-      white-space: nowrap;
     }
-    #filter-badge.active { display: inline-block; }
+    #live-mode-btn:hover { background: #219a52; }
 
     /* ── Map ── */
     #map { flex: 1; min-height: 0; }
@@ -159,7 +164,7 @@
     /* ── Manager panel (left overlay, desktop) ── */
     #manager-panel {
       position: absolute;
-      top: 110px;
+      top: 100px;
       left: 16px;
       z-index: 1000;
       background: #1a1d27ee;
@@ -168,7 +173,7 @@
       padding: 14px 16px;
       width: 280px;
       backdrop-filter: blur(8px);
-      max-height: calc(100vh - 130px);
+      max-height: calc(100vh - 120px);
       overflow-y: auto;
       display: none;
     }
@@ -327,16 +332,16 @@
     /* ── Vessel sidebar (right overlay, desktop) ── */
     #sidebar {
       position: absolute;
-      top: 110px;
+      top: 100px;
       right: 16px;
       z-index: 1000;
       background: #1a1d27ee;
       border: 1px solid #2a2d3a;
       border-radius: 10px;
       padding: 14px 16px;
-      width: 220px;
+      width: 240px;
       backdrop-filter: blur(8px);
-      max-height: calc(100vh - 130px);
+      max-height: calc(100vh - 120px);
       overflow-y: auto;
     }
     #sidebar h2 {
@@ -350,7 +355,7 @@
 
     .boat-card {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
       padding: 8px 10px;
       border-radius: 7px;
@@ -360,7 +365,7 @@
     }
     .boat-card:hover { background: #2a2d3a; }
 
-    .boat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; }
+    .boat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; margin-top: 4px; }
     .boat-dot:hover { opacity: 0.75; }
     .boat-info { flex: 1; min-width: 0; }
     .boat-name {
@@ -368,8 +373,28 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .boat-mmsi { font-size: 11px; color: #666; margin-top: 1px; }
-    .boat-speed { font-size: 12px; color: #aaa; text-align: right; flex-shrink: 0; }
     .boat-last-seen { font-size: 11px; color: #555; margin-top: 2px; }
+
+    .style-select {
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 4px;
+      color: #777;
+      font-size: 11px;
+      padding: 2px 4px;
+      cursor: pointer;
+      outline: none;
+      margin-top: 4px;
+      display: block;
+    }
+    .style-select:focus { border-color: #4a9eff; }
+
+    .boat-speed-dist {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .boat-speed { font-size: 12px; color: #aaa; }
+    .boat-dist { font-size: 11px; color: #777; margin-top: 2px; white-space: nowrap; }
 
     .boat-card.solo-active {
       background: #1e2a3a;
@@ -469,11 +494,12 @@
       #status-text { display: none; }
 
       #date-bar { padding: 5px 10px; gap: 6px; }
+      #date-inputs { gap: 6px; }
       .date-group { flex: 1; min-width: 0; }
       .date-group label { display: none; }
       .date-group input[type="datetime-local"] { font-size: 11px; padding: 4px 5px; width: 100%; }
       #load-track-btn { padding: 5px 10px; font-size: 12px; }
-      #clear-filter-btn { padding: 5px 8px; font-size: 11px; }
+      #live-mode-btn { padding: 5px 10px; font-size: 12px; }
 
       /* Manager becomes bottom drawer */
       #manager-panel {
@@ -537,11 +563,14 @@
         padding: 4px 8px;
         height: 48px;
         background: #1e2130;
+        align-items: center;
       }
       .boat-name { font-size: 12px; }
       .boat-mmsi { font-size: 10px; }
       .boat-speed { font-size: 11px; }
+      .boat-dist { display: none; }
       .boat-last-seen { display: none; }
+      .style-select { display: none; }
 
       #map { margin-bottom: 64px; }
     }
@@ -561,17 +590,19 @@
   </header>
 
   <div id="date-bar">
-    <div class="date-group">
-      <label for="date-start">From</label>
-      <input type="datetime-local" id="date-start" />
+    <span id="no-vessel-msg">Select a vessel first</span>
+    <div id="date-inputs">
+      <div class="date-group">
+        <label for="date-start">From</label>
+        <input type="datetime-local" id="date-start" />
+      </div>
+      <div class="date-group">
+        <label for="date-end">To</label>
+        <input type="datetime-local" id="date-end" />
+      </div>
+      <button id="load-track-btn" onclick="applyFilter()">Load Track</button>
+      <button id="live-mode-btn" onclick="enterLiveMode()">Live Mode</button>
     </div>
-    <div class="date-group">
-      <label for="date-end">To</label>
-      <input type="datetime-local" id="date-end" />
-    </div>
-    <button id="load-track-btn" onclick="applyFilter()">Load Track</button>
-    <button id="clear-filter-btn" onclick="clearFilter()">Clear</button>
-    <span id="filter-badge">Filtered</span>
   </div>
 
   <div id="map"></div>
@@ -622,6 +653,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const SAN_DIEGO = [32.7, -117.2];
+    const POINT_LOMA = [32.6644, -117.2417];
+
     const map = L.map("map", { center: SAN_DIEGO, zoom: 11 });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -634,10 +667,29 @@
     const savedPointLayers = [];
     let filterStart = null;
     let filterEnd = null;
+    let filterActive = false;
     let soloMmsi = null;
+    let boats = [];
+    let cachedLatestMap = {};
+    let refreshInterval = null;
     const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [14, 0] });
 
     // ── Utilities ────────────────────────────────────────────────────────────
+
+    function haversineNm(lat1, lon1, lat2, lon2) {
+      const R = 3440.065;
+      const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+      const dφ = (lat2 - lat1) * Math.PI / 180;
+      const dλ = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(dλ / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function trackDashArray(style) {
+      if (style === 'dashed') return '8 6';
+      if (style === 'dotted') return '2 6';
+      return null;
+    }
 
     function setStatus(state, text) {
       const dot = document.getElementById("status-dot");
@@ -729,31 +781,81 @@
       delete boatLayers[mmsi];
     }
 
-    // ── Date filter ──────────────────────────────────────────────────────────
+    // ── Auto-refresh ─────────────────────────────────────────────────────────
 
-    function applyFilter() {
-      filterStart = document.getElementById("date-start").value || null;
-      filterEnd = document.getElementById("date-end").value || null;
-      document.getElementById("filter-badge").classList.toggle("active", !!(filterStart || filterEnd));
-      refresh();
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      refreshInterval = setInterval(refresh, 30000);
     }
 
-    function clearFilter() {
+    function stopAutoRefresh() {
+      if (refreshInterval !== null) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+    }
+
+    // ── Date bar UI ──────────────────────────────────────────────────────────
+
+    function updateDateBarUI() {
+      const noMsg = document.getElementById("no-vessel-msg");
+      const dateInputs = document.getElementById("date-inputs");
+      const liveModeBtn = document.getElementById("live-mode-btn");
+      if (soloMmsi) {
+        noMsg.style.display = "none";
+        dateInputs.style.display = "flex";
+        liveModeBtn.style.display = filterActive ? "inline-block" : "none";
+      } else {
+        noMsg.style.display = "";
+        dateInputs.style.display = "none";
+        liveModeBtn.style.display = "none";
+      }
+    }
+
+    async function applyFilter() {
+      if (!soloMmsi) return;
+      filterStart = document.getElementById("date-start").value || null;
+      filterEnd = document.getElementById("date-end").value || null;
+      filterActive = !!(filterStart || filterEnd);
+      if (filterActive) {
+        stopAutoRefresh();
+        // Hide all other boats, show only selected with filtered positions
+        for (const mmsi of Object.keys(boatLayers)) {
+          if (mmsi !== soloMmsi) removeBoatFromMap(mmsi);
+        }
+        const boat = boats.find(b => b.mmsi === soloMmsi);
+        if (boat) {
+          await updateBoatOnMap(boat);
+          applySoloMode();
+        }
+      } else {
+        enterLiveMode();
+        return;
+      }
+      updateDateBarUI();
+    }
+
+    function enterLiveMode() {
+      filterActive = false;
       filterStart = null;
       filterEnd = null;
-      document.getElementById("date-start").value = "";
-      document.getElementById("date-end").value = "";
-      document.getElementById("filter-badge").classList.remove("active");
+      const startEl = document.getElementById("date-start");
+      const endEl = document.getElementById("date-end");
+      if (startEl) startEl.value = "";
+      if (endEl) endEl.value = "";
+      updateDateBarUI();
+      startAutoRefresh();
       refresh();
     }
 
     // ── Boat track rendering ─────────────────────────────────────────────────
 
     async function updateBoatOnMap(boat) {
+      const useFilter = filterActive && boat.mmsi === soloMmsi;
       const params = new URLSearchParams();
-      if (filterStart) params.set("start", filterStart);
-      if (filterEnd) params.set("end", filterEnd);
-      if (filterStart || filterEnd) params.set("limit", "5000");
+      if (useFilter && filterStart) params.set("start", filterStart);
+      if (useFilter && filterEnd) params.set("end", filterEnd);
+      if (useFilter && (filterStart || filterEnd)) params.set("limit", "5000");
       const qs = params.toString();
       const url = `/api/positions/${boat.mmsi}` + (qs ? "?" + qs : "");
 
@@ -771,10 +873,12 @@
 
       removeBoatFromMap(boat.mmsi);
 
+      const dashArray = trackDashArray(boat.track_style);
       const polyline = L.polyline(latLngs, {
         color: boat.color,
         weight: 3,
         opacity: 0.85,
+        dashArray,
       }).addTo(map);
 
       polyline.on("mousemove", e => {
@@ -917,6 +1021,10 @@
         card.className = "boat-card" + (soloMmsi === boat.mmsi ? " solo-active" : "");
         const speedText = latest?.speed != null ? `${latest.speed.toFixed(1)} kn` : "—";
         const lastSeenText = formatLastSeen(latest?.timestamp);
+        const distText = latest
+          ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) + " nm"
+          : "—";
+        const trackStyle = boat.track_style || 'solid';
 
         card.innerHTML = `
           <div class="boat-dot" style="background:${boat.color}" title="Change color"></div>
@@ -924,13 +1032,22 @@
           <div class="boat-info">
             <div class="boat-name">${boat.name}</div>
             <div class="boat-mmsi">${boat.mmsi}</div>
+            <select class="style-select" title="Track style">
+              <option value="solid"${trackStyle === 'solid' ? ' selected' : ''}>Solid</option>
+              <option value="dashed"${trackStyle === 'dashed' ? ' selected' : ''}>Dashed</option>
+              <option value="dotted"${trackStyle === 'dotted' ? ' selected' : ''}>Dotted</option>
+            </select>
             <div class="boat-last-seen">${lastSeenText}</div>
           </div>
-          <div class="boat-speed">${speedText}</div>
+          <div class="boat-speed-dist">
+            <div class="boat-speed">${speedText}</div>
+            <div class="boat-dist">${distText}</div>
+          </div>
         `;
 
         const dot = card.querySelector(".boat-dot");
         const colorInput = card.querySelector("input[type=color]");
+        const styleSelect = card.querySelector(".style-select");
 
         dot.addEventListener("click", e => {
           e.stopPropagation();
@@ -959,9 +1076,30 @@
           }
         });
 
+        styleSelect.addEventListener("change", async e => {
+          e.stopPropagation();
+          const newStyle = styleSelect.value;
+          try {
+            const res = await fetch(`/api/boats/${boat.mmsi}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ track_style: newStyle }),
+            });
+            if (!res.ok) throw new Error();
+            const layers = boatLayers[boat.mmsi];
+            if (layers) layers.polyline.setStyle({ dashArray: trackDashArray(newStyle) });
+          } catch {
+            styleSelect.value = boat.track_style || 'solid';
+          }
+        });
+
         card.addEventListener("click", () => {
           if (soloMmsi === boat.mmsi) {
             soloMmsi = null;
+            if (filterActive) {
+              enterLiveMode();
+              return;
+            }
           } else {
             soloMmsi = boat.mmsi;
             const layer = boatLayers[boat.mmsi];
@@ -969,6 +1107,7 @@
           }
           applySoloMode();
           renderVesselSidebar(activeBoats, latestMap);
+          updateDateBarUI();
         });
 
         list.appendChild(card);
@@ -1050,7 +1189,8 @@
     // ── Main refresh ─────────────────────────────────────────────────────────
 
     async function refresh() {
-      let boats;
+      if (filterActive) return;
+
       try {
         const res = await fetch("/api/boats");
         boats = await res.json();
@@ -1064,7 +1204,7 @@
         if (!currentMmsis.has(mmsi)) removeBoatFromMap(mmsi);
       }
 
-      const latestMap = {};
+      cachedLatestMap = {};
       let anyPosition = false;
 
       const activeSet = new Set(boats.filter(b => b.active).map(b => b.mmsi));
@@ -1075,15 +1215,16 @@
           removeBoatFromMap(boat.mmsi);
         } else {
           const latest = await updateBoatOnMap(boat);
-          latestMap[boat.mmsi] = latest;
+          cachedLatestMap[boat.mmsi] = latest;
           if (latest) anyPosition = true;
         }
       }
 
       const activeBoats = boats.filter(b => b.active);
-      renderVesselSidebar(activeBoats, latestMap);
+      renderVesselSidebar(activeBoats, cachedLatestMap);
       renderManagerList(boats);
       applySoloMode();
+      updateDateBarUI();
 
       if (anyPosition) {
         setStatus("live", "Live");
@@ -1139,7 +1280,7 @@
     // Initial load
     refresh();
     loadSavedPoints();
-    setInterval(refresh, 30000);
+    startAutoRefresh();
   </script>
 </body>
 </html>
