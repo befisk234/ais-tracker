@@ -42,22 +42,26 @@ HOME_LAT, HOME_LON = 32.6644, -117.2417
 HOME_RADIUS_NM = 2.0
 
 COLOR_PALETTE = [
-    "#dc2626",  # Red
-    "#2563eb",  # Blue
-    "#16a34a",  # Green
-    "#9333ea",  # Purple
-    "#ea580c",  # Orange
-    "#ec4899",  # Pink
-    "#06b6d4",  # Cyan
-    "#eab308",  # Yellow
+    "#E6194B",  # Red
+    "#3CB44B",  # Green
+    "#4363D8",  # Blue
+    "#F58231",  # Orange
+    "#911EB4",  # Purple
+    "#42D4F4",  # Cyan
+    "#F032E6",  # Magenta
+    "#BFEF45",  # Lime
+    "#FABED4",  # Pink
+    "#469990",  # Teal
+    "#9A6324",  # Brown
+    "#800000",  # Maroon
+    "#AAFFC3",  # Mint
+    "#808000",  # Olive
+    "#FFD8B1",  # Apricot
+    "#000075",  # Navy
+    "#A9A9A9",  # Gray
+    "#FFE119",  # Yellow
+    "#DCBEFF",  # Lavender
     "#000000",  # Black
-    "#ffffff",  # White
-    "#d946ef",  # Magenta
-    "#84cc16",  # Lime
-    "#14b8a6",  # Teal
-    "#92400e",  # Brown
-    "#1e3a8a",  # Navy
-    "#7f1d1d",  # Maroon
 ]
 
 
@@ -252,17 +256,16 @@ async def lifespan(app: FastAPI):
         rows = await conn.fetch("SELECT mmsi, name FROM boats WHERE active = true")
         tracked_mmsis = {row["mmsi"]: row["name"] for row in rows}
 
-        # One-time migration: assign unique colors if all boats share the same color
-        all_boats = await conn.fetch("SELECT mmsi, color FROM boats ORDER BY created_at")
-        if len(all_boats) > 1:
-            unique_colors = {row["color"] for row in all_boats}
-            if len(unique_colors) == 1:
-                for i, row in enumerate(all_boats):
-                    await conn.execute(
-                        "UPDATE boats SET color = $1 WHERE mmsi = $2",
-                        COLOR_PALETTE[i % len(COLOR_PALETTE)], row["mmsi"],
-                    )
-                log.info("Assigned unique colors to %d existing boats", len(all_boats))
+        # Self-healing color migration: runs every startup, ensures each boat has
+        # its palette-assigned color so duplicates can never persist.
+        all_boats = await conn.fetch("SELECT mmsi FROM boats ORDER BY created_at")
+        for i, row in enumerate(all_boats):
+            await conn.execute(
+                "UPDATE boats SET color = $1 WHERE mmsi = $2",
+                COLOR_PALETTE[i % len(COLOR_PALETTE)], row["mmsi"],
+            )
+        if all_boats:
+            log.info("Color migration: assigned palette colors to %d boat(s)", len(all_boats))
 
     stream_task = asyncio.create_task(ais_stream_task(db_pool))
     log.info("AIS stream task started, tracking %d boat(s)", len(tracked_mmsis))
@@ -447,7 +450,7 @@ def _parse_dt(s: str) -> datetime | None:
 @app.get("/api/positions/{mmsi}")
 async def get_positions(
     mmsi: str,
-    limit: int = 500,
+    limit: int = 2000,
     start: str | None = None,
     end: str | None = None,
 ):
@@ -455,16 +458,21 @@ async def get_positions(
     clauses = ["mmsi = $1"]
     params: list = [mmsi]
 
-    if start:
-        dt = _parse_dt(start)
-        if dt:
-            params.append(dt)
-            clauses.append(f"timestamp >= ${len(params)}")
-    if end:
-        dt = _parse_dt(end)
-        if dt:
-            params.append(dt)
-            clauses.append(f"timestamp <= ${len(params)}")
+    if not start and not end:
+        # Default: last 7 days
+        params.append(datetime.now(timezone.utc) - timedelta(days=7))
+        clauses.append(f"timestamp >= ${len(params)}")
+    else:
+        if start:
+            dt = _parse_dt(start)
+            if dt:
+                params.append(dt)
+                clauses.append(f"timestamp >= ${len(params)}")
+        if end:
+            dt = _parse_dt(end)
+            if dt:
+                params.append(dt)
+                clauses.append(f"timestamp <= ${len(params)}")
 
     params.append(limit)
     where = " AND ".join(clauses)
