@@ -41,6 +41,25 @@ stream_task: asyncio.Task | None = None
 HOME_LAT, HOME_LON = 32.6644, -117.2417
 HOME_RADIUS_NM = 2.0
 
+COLOR_PALETTE = [
+    "#dc2626",  # Red
+    "#2563eb",  # Blue
+    "#16a34a",  # Green
+    "#9333ea",  # Purple
+    "#ea580c",  # Orange
+    "#ec4899",  # Pink
+    "#06b6d4",  # Cyan
+    "#eab308",  # Yellow
+    "#000000",  # Black
+    "#ffffff",  # White
+    "#d946ef",  # Magenta
+    "#84cc16",  # Lime
+    "#14b8a6",  # Teal
+    "#92400e",  # Brown
+    "#1e3a8a",  # Navy
+    "#7f1d1d",  # Maroon
+]
+
 
 LOGIN_HTML = """\
 <!DOCTYPE html>
@@ -233,6 +252,18 @@ async def lifespan(app: FastAPI):
         rows = await conn.fetch("SELECT mmsi, name FROM boats WHERE active = true")
         tracked_mmsis = {row["mmsi"]: row["name"] for row in rows}
 
+        # One-time migration: assign unique colors if all boats share the same color
+        all_boats = await conn.fetch("SELECT mmsi, color FROM boats ORDER BY created_at")
+        if len(all_boats) > 1:
+            unique_colors = {row["color"] for row in all_boats}
+            if len(unique_colors) == 1:
+                for i, row in enumerate(all_boats):
+                    await conn.execute(
+                        "UPDATE boats SET color = $1 WHERE mmsi = $2",
+                        COLOR_PALETTE[i % len(COLOR_PALETTE)], row["mmsi"],
+                    )
+                log.info("Assigned unique colors to %d existing boats", len(all_boats))
+
     stream_task = asyncio.create_task(ais_stream_task(db_pool))
     log.info("AIS stream task started, tracking %d boat(s)", len(tracked_mmsis))
 
@@ -297,7 +328,7 @@ async def serve_index():
 class BoatCreate(BaseModel):
     name: str
     mmsi: str
-    color: str = "#3388ff"
+    color: str | None = None
     track_style: str = "solid"
 
 
@@ -322,10 +353,18 @@ async def list_boats():
 async def add_boat(boat: BoatCreate):
     pool = await get_pool()
     async with pool.acquire() as conn:
+        if boat.color is None:
+            used = {row["color"].lower() for row in await conn.fetch("SELECT color FROM boats")}
+            color = next(
+                (c for c in COLOR_PALETTE if c.lower() not in used),
+                COLOR_PALETTE[len(used) % len(COLOR_PALETTE)],
+            )
+        else:
+            color = boat.color
         try:
             row = await conn.fetchrow(
                 "INSERT INTO boats (name, mmsi, color, track_style) VALUES ($1, $2, $3, $4) RETURNING id, name, mmsi, color, track_style, active, created_at",
-                boat.name, boat.mmsi, boat.color, boat.track_style,
+                boat.name, boat.mmsi, color, boat.track_style,
             )
         except asyncpg.UniqueViolationError:
             raise HTTPException(status_code=409, detail="MMSI already registered")
