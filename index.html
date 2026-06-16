@@ -45,7 +45,9 @@
       align-items: center;
       gap: 12px;
       flex-shrink: 0;
-      height: 52px;
+      height: 48px;
+      z-index: 1100;
+      position: relative;
     }
 
     .header-brand {
@@ -77,6 +79,7 @@
       cursor: pointer;
       white-space: nowrap;
       flex-shrink: 0;
+      min-height: 32px;
     }
     #manage-btn:hover { border-color: var(--brass); color: var(--brass2); }
     #manage-btn.active { background: #2a1f00; border-color: var(--brass); color: var(--brass2); }
@@ -108,104 +111,358 @@
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
+      min-height: 32px;
     }
     #logout-btn:hover { color: var(--danger); border-color: var(--danger); }
 
-    /* ── Date bar ── */
-    #date-bar {
-      background: var(--ocean);
-      border-bottom: 1px solid var(--border);
-      padding: 6px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-      flex-wrap: wrap;
-      min-height: 40px;
-    }
+    /* ── Map ── */
+    #map { flex: 1; min-height: 0; position: relative; z-index: 1; }
 
-    #no-vessel-msg {
-      font-size: 12px;
-      color: var(--dim);
-      font-style: italic;
-    }
-
-    #date-inputs {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .date-group {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .date-group label {
-      font-size: 11px;
-      color: var(--dim);
-      white-space: nowrap;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .date-group input[type="datetime-local"] {
-      background: var(--navy);
+    /* ── Map info label ── */
+    #map-info-label {
+      position: absolute;
+      bottom: 36px;
+      left: 12px;
+      z-index: 900;
+      background: rgba(17, 34, 64, 0.88);
       border: 1px solid var(--border);
       border-radius: 4px;
-      color: var(--white);
-      padding: 4px 8px;
-      font-size: 12px;
-      outline: none;
-      cursor: pointer;
-      color-scheme: dark;
+      color: var(--mist);
+      font-size: 10px;
+      padding: 3px 8px;
+      pointer-events: none;
+      font-family: 'Inter', sans-serif;
     }
-    .date-group input[type="datetime-local"]:focus { border-color: var(--brass); }
 
-    #load-track-btn {
-      background: var(--steel);
-      color: var(--white);
-      border: 1px solid var(--brass);
-      border-radius: 4px;
-      padding: 4px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      letter-spacing: 0.3px;
+    /* ── More menu (top-right map control) ── */
+    #more-menu-wrap {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 900;
     }
-    #load-track-btn:hover { background: var(--brass); color: var(--navy); }
-
-    #live-mode-btn {
-      background: transparent;
-      color: var(--seafoam);
-      border: 1px solid var(--seafoam);
-      border-radius: 4px;
-      padding: 4px 14px;
-      font-size: 12px;
-      font-weight: 600;
+    #more-menu-btn {
+      background: rgba(17,34,64,0.92);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--mist);
+      padding: 6px 11px;
+      font-size: 15px;
       cursor: pointer;
+      line-height: 1;
+      min-width: 36px;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #more-menu-btn:hover { color: var(--brass2); border-color: var(--brass); }
+    #more-menu-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: rgba(17,34,64,0.97);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      min-width: 170px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+      display: none;
+      overflow: hidden;
+    }
+    #more-menu-dropdown.open { display: block; }
+    .more-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      font-size: 13px;
+      color: var(--mist);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
       white-space: nowrap;
+    }
+    .more-item:last-child { border-bottom: none; }
+    .more-item:hover { background: var(--navy3); color: var(--white); }
+    .more-item.active { color: var(--brass2); }
+
+    /* ── Sidebar toggle (desktop, right edge) ── */
+    #sidebar-toggle {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1050;
+      background: rgba(17,34,64,0.92);
+      border: 1px solid var(--border);
+      border-right: none;
+      border-radius: 6px 0 0 6px;
+      color: var(--mist);
+      padding: 12px 7px;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1;
+      writing-mode: vertical-rl;
+      letter-spacing: 1px;
+      transition: background 0.15s;
+    }
+    #sidebar-toggle:hover { background: var(--navy3); color: var(--brass2); }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      position: fixed;
+      top: 48px;
+      right: 0;
+      bottom: 0;
+      z-index: 1000;
+      background: var(--navy2);
+      border-left: 1px solid var(--border);
+      width: 272px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.4);
+      transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    #sidebar.collapsed {
+      transform: translateX(272px);
+    }
+
+    /* Conditions bar at top of sidebar */
+    #conditions-bar {
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #conditions-summary-row {
+      display: flex;
+      align-items: center;
+      padding: 7px 12px;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #conditions-summary-row:hover { background: var(--navy3); }
+    #cond-summary-text {
+      flex: 1;
+      font-size: 11px;
+      color: var(--mist);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #cond-toggle-arrow {
+      color: var(--dim);
+      font-size: 10px;
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    #conditions-detail {
+      padding: 8px 10px 10px;
       display: none;
     }
-    #live-mode-btn:hover { background: var(--seafoam); color: var(--navy); }
+    #conditions-detail.open { display: block; }
+    .widget-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    .widget {
+      background: var(--ocean);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 9px;
+    }
+    .widget-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--dim);
+      margin-bottom: 2px;
+    }
+    .widget-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--brass2);
+      line-height: 1.1;
+    }
+    .widget-unit { font-size: 10px; color: var(--mist); font-family: 'Inter', sans-serif; font-weight: 400; }
+    .widget-sub { font-size: 10px; color: var(--mist); margin-top: 1px; }
+    .widget-value.loading { color: var(--dim); font-size: 12px; font-family: 'Inter', sans-serif; }
 
-    /* ── Map ── */
-    #map { flex: 1; min-height: 0; }
+    /* Fishing grounds toggle inside More menu handles this now */
+
+    /* ── Vessel list ── */
+    #sidebar-vessels-wrap {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    #sidebar-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    #sidebar-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--brass);
+      flex: 1;
+    }
+    #boat-list { padding: 6px 8px; }
+    #no-boats { font-size: 13px; color: var(--dim); text-align: center; padding: 16px 0; }
+
+    /* ── New boat card ── */
+    .boat-card {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 9px 8px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.12s;
+      margin-bottom: 3px;
+      border: 1px solid transparent;
+    }
+    .boat-card:hover { background: var(--navy3); border-color: var(--border); }
+    .boat-card.focused {
+      background: var(--ocean);
+      border: 1px solid var(--brass);
+    }
+
+    .bc-dot {
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+      border: 2px solid rgba(255,255,255,0.35);
+    }
+
+    .bc-body { flex: 1; min-width: 0; }
+    .bc-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+    }
+    .bc-status {
+      font-size: 12px;
+      color: var(--mist);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bc-meta {
+      font-size: 10px;
+      color: var(--dim);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bc-gear {
+      background: none;
+      border: none;
+      color: var(--dim);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 3px 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      line-height: 1;
+      min-width: 24px;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bc-gear:hover { background: var(--navy3); color: var(--white); }
+
+    /* ── Gear menu ── */
+    .bc-menu {
+      position: absolute;
+      right: 8px;
+      top: 32px;
+      background: var(--navy2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      min-width: 148px;
+      z-index: 2000;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .bc-menu-item {
+      padding: 9px 13px;
+      font-size: 13px;
+      color: var(--mist);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .bc-menu-item:last-child { border-bottom: none; }
+    .bc-menu-item:hover { background: var(--navy3); color: var(--white); }
+    .bc-menu-item.danger:hover { color: var(--danger); }
+
+    /* ── Color picker popup ── */
+    .color-picker-popup {
+      position: absolute;
+      right: 8px;
+      top: 32px;
+      background: var(--navy2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      z-index: 2100;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+      display: grid;
+      grid-template-columns: repeat(5, 24px);
+      gap: 7px;
+    }
+    .cpp-swatch {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s, border-color 0.1s;
+    }
+    .cpp-swatch:hover { transform: scale(1.2); border-color: rgba(255,255,255,0.6); }
+    .cpp-swatch.selected { border-color: white; transform: scale(1.1); }
+
+    /* ── Rename input overlay ── */
+    .bc-rename-input {
+      background: var(--navy);
+      border: 1px solid var(--brass);
+      border-radius: 4px;
+      color: var(--white);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 3px 7px;
+      outline: none;
+      width: 100%;
+    }
 
     /* ── Manager panel ── */
     #manager-panel {
-      position: absolute;
-      top: 104px;
+      position: fixed;
+      top: 48px;
       left: 16px;
-      z-index: 1000;
+      z-index: 1200;
       background: var(--navy2);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 14px 16px;
       width: 290px;
-      backdrop-filter: blur(8px);
-      max-height: calc(100vh - 120px);
+      max-height: calc(100vh - 64px);
       overflow-y: auto;
       display: none;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
@@ -288,7 +545,6 @@
       font-weight: 600;
       cursor: pointer;
       margin-top: 4px;
-      letter-spacing: 0.3px;
     }
     .btn-primary:hover { background: var(--brass); color: var(--navy); }
     .btn-primary:disabled { background: #0a2040; border-color: var(--border); color: var(--dim); cursor: default; }
@@ -350,222 +606,16 @@
     .btn-sm.danger:hover { color: var(--danger); border-color: var(--danger); }
     .btn-sm:disabled { opacity: 0.4; cursor: default; }
 
-    /* ── Right sidebar ── */
-    #sidebar {
-      position: absolute;
-      top: 104px;
-      right: 16px;
-      z-index: 1000;
-      background: var(--navy2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      width: 268px;
-      backdrop-filter: blur(8px);
-      max-height: calc(100vh - 120px);
-      overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .sidebar-vessels {
-      flex: 1;
-      padding: 12px 14px;
-      min-height: 0;
-      overflow-y: auto;
-    }
-
-    /* ── Marine widgets ── */
-    .sidebar-widgets {
-      border-top: 1px solid var(--border);
-      padding: 10px 14px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .widget-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-
-    .widget {
-      background: var(--ocean);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 7px 9px;
-    }
-    .widget-label {
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--dim);
-      margin-bottom: 3px;
-    }
-    .widget-value {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--brass2);
-      line-height: 1.1;
-    }
-    .widget-unit {
-      font-size: 10px;
-      color: var(--mist);
-      font-family: 'Inter', sans-serif;
-      font-weight: 400;
-    }
-    .widget-sub {
-      font-size: 10px;
-      color: var(--mist);
-      margin-top: 1px;
-    }
-    .widget.wide {
-      grid-column: 1 / -1;
-    }
-    .widget-value.loading { color: var(--dim); font-size: 13px; font-family: 'Inter', sans-serif; }
-
-    /* Fishing grounds toggle */
-    #fishing-toggle {
-      background: var(--navy3);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--mist);
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    #fishing-toggle:hover { border-color: var(--brass); color: var(--brass2); }
-    #fishing-toggle.active { border-color: var(--brass); color: var(--brass2); background: #1a1400; }
-    #fishing-toggle .fish-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--dim); flex-shrink: 0;
-    }
-    #fishing-toggle.active .fish-dot { background: var(--brass2); }
-
-    #sidebar h2 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--brass);
-      margin-bottom: 10px;
-    }
-
-    .boat-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      padding: 9px 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.15s;
-      margin-bottom: 5px;
-      border: 1px solid transparent;
-    }
-    .boat-card:hover { background: var(--navy3); border-color: var(--border); }
-    .boat-card.solo-active {
-      background: var(--ocean);
-      border: 1px solid var(--brass);
-    }
-
-    /* Activity status dot (green = seen last hour, red = not) */
-    .activity-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      flex-shrink: 0;
-      margin-top: 5px;
-    }
-    .activity-dot.act-green { background: #22c55e; box-shadow: 0 0 4px #22c55e88; }
-    .activity-dot.act-red   { background: var(--danger); }
-
-    .boat-dot {
-      width: 12px; height: 12px; border-radius: 50%;
-      flex-shrink: 0;
-      margin-top: 3px;
-      border: 2px solid rgba(255,255,255,0.3);
-    }
-    .boat-info { flex: 1; min-width: 0; }
-    .boat-name {
-      font-size: 14px; font-weight: 600;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      color: var(--white);
-    }
-    .boat-mmsi { font-size: 10px; color: var(--dim); margin-top: 1px; letter-spacing: 0.3px; }
-    .boat-last-seen { font-size: 10px; color: var(--dim); margin-top: 3px; }
-
-    /* Color dropdown in sidebar */
-    .color-select {
-      background: var(--navy);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      color: var(--dim);
-      font-size: 10px;
-      padding: 2px 4px;
-      cursor: pointer;
-      outline: none;
-      margin-top: 4px;
-      display: block;
-      width: 100%;
-    }
-    .color-select:focus { border-color: var(--brass); }
-
-    .boat-speed-dist {
-      text-align: right;
-      flex-shrink: 0;
-    }
-    .boat-speed { font-size: 13px; color: var(--mist); font-family: 'Barlow Condensed', sans-serif; font-weight: 600; }
-    .boat-dist { font-size: 10px; color: var(--dim); margin-top: 2px; white-space: nowrap; }
-
-    /* Eye visibility toggle button */
-    .eye-btn {
-      background: none;
-      border: none;
-      color: var(--dim);
-      cursor: pointer;
-      padding: 3px;
-      flex-shrink: 0;
-      margin-top: 1px;
-      border-radius: 3px;
-      line-height: 1;
-    }
-    .eye-btn:hover { color: var(--white); background: var(--navy3); }
-    .eye-btn.eye-hidden { color: var(--danger); }
-
-    #no-boats { font-size: 13px; color: var(--dim); text-align: center; padding: 8px 0; }
-
-    /* ── Fishing grounds markers ── */
-    .fishing-ground-label {
-      background: rgba(11, 26, 46, 0.9);
-      border: 1px solid var(--brass);
-      border-radius: 4px;
-      color: var(--brass2);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      padding: 3px 7px;
-      white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    }
-
     /* ── Leaflet overrides ── */
     .leaflet-tooltip.boat-name-label {
-      background: rgba(17, 34, 64, 0.95);
-      border: 1px solid var(--brass);
-      border-radius: 4px;
-      color: var(--white);
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      color: #111;
       font-size: 11px;
       font-weight: 600;
-      padding: 2px 7px;
-      box-shadow: none;
+      padding: 2px 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
       white-space: nowrap;
     }
     .leaflet-tooltip.boat-name-label::before { display: none; }
@@ -597,6 +647,21 @@
     .leaflet-popup-close-button:hover { color: var(--danger) !important; }
     .leaflet-popup-content { margin: 12px 14px; line-height: 1.5; }
 
+    /* Fishing grounds */
+    .fishing-ground-label {
+      background: rgba(11, 26, 46, 0.9);
+      border: 1px solid var(--brass);
+      border-radius: 4px;
+      color: var(--brass2);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 3px 7px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    /* Save form */
     .save-form { min-width: 210px; }
     .save-form .sf-coords { font-size: 11px; color: var(--dim); margin-bottom: 10px; font-family: monospace; }
     .save-form .sf-field { margin-bottom: 8px; }
@@ -637,38 +702,12 @@
     .point-popup .pt-notes { margin-top: 6px; font-size: 12px; color: var(--mist); white-space: pre-wrap; word-break: break-word; }
     .point-popup .pt-date { font-size: 10px; color: var(--dim); margin-top: 6px; }
 
-    /* ── Map controls ── */
-    .map-nav-control {
-      background: rgba(17, 34, 64, 0.92) !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 6px !important;
-      overflow: hidden;
-    }
-    .map-nav-btn {
-      display: block;
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid var(--border);
-      color: var(--mist);
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      width: 100%;
-      text-align: left;
-      letter-spacing: 0.3px;
-      font-family: 'Inter', sans-serif;
-    }
-    .map-nav-btn:last-child { border-bottom: none; }
-    .map-nav-btn:hover { background: var(--navy3); color: var(--brass2); }
-
-    /* Compass rose */
-    .compass-rose-control {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
+    /* Boat popup */
+    .boat-popup { min-width: 170px; }
+    .boat-popup .bp-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    .boat-popup .bp-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+    .boat-popup .bp-label { color: var(--dim); }
+    .boat-popup .bp-val { color: var(--white); font-weight: 500; }
 
     /* Nautical scale */
     .nautical-scale-control {
@@ -681,104 +720,179 @@
       font-family: 'Inter', sans-serif !important;
       pointer-events: none;
     }
-    .ns-bar {
-      height: 3px;
-      background: var(--mist);
-      border-left: 2px solid var(--mist);
-      border-right: 2px solid var(--mist);
-      margin-bottom: 2px;
+    .ns-bar { height: 3px; background: var(--mist); border-left: 2px solid var(--mist); border-right: 2px solid var(--mist); margin-bottom: 2px; }
+    .ns-label { color: var(--mist); font-size: 10px; text-align: center; }
+
+    /* ── Date bar (shown when boat is focused) ── */
+    #date-bar {
+      position: fixed;
+      top: 48px;
+      left: 0;
+      right: 0;
+      z-index: 1050;
+      background: var(--ocean);
+      border-bottom: 1px solid var(--border);
+      padding: 5px 14px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .ns-label {
-      color: var(--mist);
-      font-size: 10px;
-      text-align: center;
+    #date-bar.visible { display: flex; }
+    .date-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .date-group label {
+      font-size: 11px;
+      color: var(--dim);
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .date-group input[type="datetime-local"] {
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--white);
+      padding: 4px 8px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      color-scheme: dark;
+    }
+    .date-group input[type="datetime-local"]:focus { border-color: var(--brass); }
+    #load-track-btn {
+      background: var(--steel);
+      color: var(--white);
+      border: 1px solid var(--brass);
+      border-radius: 4px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #load-track-btn:hover { background: var(--brass); color: var(--navy); }
+    #live-mode-btn {
+      background: transparent;
+      color: var(--seafoam);
+      border: 1px solid var(--seafoam);
+      border-radius: 4px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      display: none;
+    }
+    #live-mode-btn:hover { background: var(--seafoam); color: var(--navy); }
+    #date-bar-vessel-name {
+      font-size: 12px;
+      color: var(--brass2);
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    /* Boat popup */
-    .boat-popup { min-width: 170px; }
-    .boat-popup .bp-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
-    .boat-popup .bp-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
-    .boat-popup .bp-label { color: var(--dim); }
-    .boat-popup .bp-val { color: var(--white); font-weight: 500; }
+    /* ── Mobile peek card ── */
+    #mobile-peek {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--navy2);
+      border-top: 2px solid var(--brass);
+      border-radius: 16px 16px 0 0;
+      padding: 12px 16px 20px;
+      cursor: pointer;
+    }
+    .mp-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 10px;
+    }
+    .mp-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .mp-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .mp-name { font-size: 15px; font-weight: 700; color: var(--white); flex: 1; }
+    .mp-status { font-size: 12px; color: var(--mist); }
+    .mp-arrow { color: var(--dim); font-size: 18px; }
+
+    /* ── Mobile bottom sheet (sidebar) ── */
+    #mobile-sheet {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 1100;
+      background: var(--navy2);
+      border-top: 2px solid var(--brass);
+      border-radius: 14px 14px 0 0;
+      max-height: 70vh;
+      overflow-y: auto;
+      transform: translateY(110%);
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      padding: 8px 0 24px;
+    }
+    #mobile-sheet.open { transform: translateY(0); }
+    #mobile-sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 10px;
+    }
+    #mobile-sheet-close {
+      position: absolute;
+      top: 12px; right: 14px;
+      background: none; border: none;
+      color: var(--dim); font-size: 22px;
+      cursor: pointer; line-height: 1;
+      padding: 4px;
+    }
+    #sheet-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1090;
+    }
+    #sheet-overlay.open { display: block; }
 
     /* ── Mobile ── */
     @media (max-width: 767px) {
-      header { padding: 0 12px; }
+      header { padding: 0 12px; height: 48px; }
       header h1 { font-size: 18px; }
       #status-text { display: none; }
+      #manage-btn { display: none; }
+      #logout-btn { padding: 5px 8px; font-size: 11px; }
 
-      #date-bar { padding: 5px 10px; gap: 6px; }
-      #date-inputs { gap: 5px; }
-      .date-group { flex: 1; min-width: 0; }
-      .date-group label { display: none; }
-      .date-group input[type="datetime-local"] { font-size: 11px; padding: 4px 5px; width: 100%; }
-      #load-track-btn, #live-mode-btn { padding: 4px 10px; font-size: 11px; }
+      #sidebar { display: none !important; }
+      #sidebar-toggle { display: none !important; }
+      #more-menu-wrap { top: 8px; right: 8px; }
 
-      #manager-panel {
-        position: fixed !important;
-        top: auto !important; bottom: 0 !important;
-        left: 0 !important; right: 0 !important;
-        width: 100% !important;
-        max-height: 72vh;
-        border-radius: 14px 14px 0 0;
-        border-bottom: none;
-        display: block !important;
-        transform: translateY(110%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow-y: auto;
-        z-index: 1100;
-        padding: 8px 16px 24px;
-      }
-      #manager-panel.open { transform: translateY(0); }
-      #drawer-handle { display: block; }
+      #map { margin-bottom: 76px; }
+      #map-info-label { bottom: 82px; }
 
-      #sidebar {
-        position: fixed !important;
-        top: auto !important; bottom: 0 !important;
-        left: 0 !important; right: 0 !important;
-        width: 100% !important;
-        max-height: none;
-        border-radius: 0;
-        border: none;
-        border-top: 2px solid var(--brass);
-        z-index: 900;
-        flex-direction: column;
-      }
-      .sidebar-widgets { display: none; }
-      .sidebar-vessels {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        padding: 0 10px;
-        height: 68px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-      }
-      #sidebar h2 { display: none; }
-      #boat-list {
-        display: flex;
-        flex-direction: row;
-        gap: 6px;
-        align-items: center;
-        flex: 1;
-        padding: 6px 0;
-      }
-      #no-boats { white-space: nowrap; font-size: 12px; padding: 0; }
-      .boat-card {
-        flex-shrink: 0;
-        min-width: 110px;
-        margin-bottom: 0;
-        padding: 6px 8px;
-        align-items: center;
-        height: 52px;
-        background: var(--navy3);
-      }
-      .boat-name { font-size: 12px; }
-      .boat-mmsi { font-size: 10px; }
-      .boat-dist, .boat-last-seen, .color-select, .eye-btn { display: none; }
+      #mobile-peek { display: block; }
+      #mobile-sheet { display: block; }
+    }
 
-      #map { margin-bottom: 68px; }
+    @media (min-width: 768px) {
+      #mobile-peek { display: none !important; }
+      #mobile-sheet { display: none !important; }
+      #sheet-overlay { display: none !important; }
     }
   </style>
 </head>
@@ -802,25 +916,85 @@
     </form>
   </header>
 
+  <!-- Date bar: visible when a boat is focused -->
   <div id="date-bar">
-    <span id="no-vessel-msg">Select a vessel first</span>
-    <div id="date-inputs">
-      <div class="date-group">
-        <label for="date-start">From</label>
-        <input type="datetime-local" id="date-start" />
+    <span id="date-bar-vessel-name"></span>
+    <div class="date-group">
+      <label for="date-start">From</label>
+      <input type="datetime-local" id="date-start" />
+    </div>
+    <div class="date-group">
+      <label for="date-end">To</label>
+      <input type="datetime-local" id="date-end" />
+    </div>
+    <button id="load-track-btn" onclick="applyFilter()">Load Track</button>
+    <button id="live-mode-btn" onclick="enterLiveMode()">&#9679; Live</button>
+  </div>
+
+  <div id="map">
+    <!-- Map info label -->
+    <div id="map-info-label">Showing last 7 days</div>
+
+    <!-- More menu (top-right) -->
+    <div id="more-menu-wrap">
+      <button id="more-menu-btn" title="More options" onclick="toggleMoreMenu(event)">&#8942;</button>
+      <div id="more-menu-dropdown">
+        <div class="more-item" onclick="fitAllBoats(); closeMoreMenu()">&#8862; Fit All Boats</div>
+        <div class="more-item" onclick="map.setView(SAN_DIEGO, 11); closeMoreMenu()">&#8982; San Diego</div>
+        <div class="more-item" id="fishing-menu-item" onclick="toggleFishingGrounds(); closeMoreMenu()">&#127920; Fishing Grounds</div>
       </div>
-      <div class="date-group">
-        <label for="date-end">To</label>
-        <input type="datetime-local" id="date-end" />
-      </div>
-      <button id="load-track-btn" onclick="applyFilter()">Load Track</button>
-      <button id="live-mode-btn" onclick="enterLiveMode()">&#9679; Live</button>
     </div>
   </div>
 
-  <div id="map"></div>
+  <!-- Sidebar toggle (desktop) -->
+  <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">Vessels</button>
 
-  <!-- Boat Manager panel -->
+  <!-- Right sidebar -->
+  <div id="sidebar" class="collapsed">
+    <!-- Conditions bar -->
+    <div id="conditions-bar">
+      <div id="conditions-summary-row" onclick="toggleConditions()">
+        <span id="cond-summary-text">&#127754; — &nbsp;&#128168; — &nbsp;&#127777; —</span>
+        <span id="cond-toggle-arrow">&#9660;</span>
+      </div>
+      <div id="conditions-detail">
+        <div class="widget-row">
+          <div class="widget" id="w-tide">
+            <div class="widget-label">Tide (SD Bay)</div>
+            <div class="widget-value loading" id="tide-val">...</div>
+            <div class="widget-sub" id="tide-sub"></div>
+          </div>
+          <div class="widget" id="w-sst">
+            <div class="widget-label">Sea Temp</div>
+            <div class="widget-value loading" id="sst-val">...</div>
+            <div class="widget-sub" id="sst-sub"></div>
+          </div>
+        </div>
+        <div class="widget-row">
+          <div class="widget" id="w-wind">
+            <div class="widget-label">Wind (46225)</div>
+            <div class="widget-value loading" id="wind-val">...</div>
+            <div class="widget-sub" id="wind-sub"></div>
+          </div>
+          <div class="widget" id="w-sun">
+            <div class="widget-label">Sun (SD)</div>
+            <div class="widget-value loading" id="sun-val">...</div>
+            <div class="widget-sub" id="sun-sub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vessel list -->
+    <div id="sidebar-header">
+      <h2>Vessels</h2>
+    </div>
+    <div id="sidebar-vessels-wrap">
+      <div id="boat-list"><div id="no-boats">No vessels tracked</div></div>
+    </div>
+  </div>
+
+  <!-- Manager panel -->
   <div id="manager-panel">
     <div id="drawer-handle"></div>
     <div class="panel-header">
@@ -857,42 +1031,25 @@
     </div>
   </div>
 
-  <!-- Right sidebar: vessels + widgets -->
-  <div id="sidebar">
-    <div class="sidebar-vessels">
-      <h2>Vessels</h2>
-      <div id="boat-list"><div id="no-boats">No vessels tracked</div></div>
-    </div>
-    <div class="sidebar-widgets">
-      <div class="widget-row">
-        <div class="widget" id="w-tide">
-          <div class="widget-label">Tide (SD Bay)</div>
-          <div class="widget-value loading" id="tide-val">...</div>
-          <div class="widget-sub" id="tide-sub"></div>
-        </div>
-        <div class="widget" id="w-sst">
-          <div class="widget-label">Sea Temp</div>
-          <div class="widget-value loading" id="sst-val">...</div>
-          <div class="widget-sub" id="sst-sub"></div>
-        </div>
+  <!-- Mobile peek card -->
+  <div id="mobile-peek" onclick="openMobileSheet()">
+    <div class="mp-handle"></div>
+    <div class="mp-content">
+      <div class="mp-dot" id="mp-dot"></div>
+      <div>
+        <div class="mp-name" id="mp-name">No vessels</div>
+        <div class="mp-status" id="mp-status"></div>
       </div>
-      <div class="widget-row">
-        <div class="widget" id="w-wind">
-          <div class="widget-label">Wind (46225)</div>
-          <div class="widget-value loading" id="wind-val">...</div>
-          <div class="widget-sub" id="wind-sub"></div>
-        </div>
-        <div class="widget" id="w-sun">
-          <div class="widget-label">Sun (SD)</div>
-          <div class="widget-value loading" id="sun-val">...</div>
-          <div class="widget-sub" id="sun-sub"></div>
-        </div>
-      </div>
-      <button id="fishing-toggle" onclick="toggleFishingGrounds()">
-        <span class="fish-dot"></span>
-        Fishing Grounds
-      </button>
+      <span class="mp-arrow">&#8679;</span>
     </div>
+  </div>
+
+  <!-- Mobile bottom sheet -->
+  <div id="sheet-overlay" onclick="closeMobileSheet()"></div>
+  <div id="mobile-sheet">
+    <div id="mobile-sheet-handle"></div>
+    <button id="mobile-sheet-close" onclick="closeMobileSheet()">&#215;</button>
+    <div id="mobile-boat-list" style="padding: 0 8px 8px;"></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -900,27 +1057,19 @@
     const SAN_DIEGO = [32.7, -117.2];
     const POINT_LOMA = [32.6644, -117.2417];
 
-    const COLOR_OPTIONS = [
-      { name: 'Red',     value: '#dc2626' },
-      { name: 'Blue',    value: '#2563eb' },
-      { name: 'Green',   value: '#16a34a' },
-      { name: 'Purple',  value: '#9333ea' },
-      { name: 'Orange',  value: '#ea580c' },
-      { name: 'Pink',    value: '#ec4899' },
-      { name: 'Cyan',    value: '#06b6d4' },
-      { name: 'Yellow',  value: '#eab308' },
-      { name: 'Black',   value: '#000000' },
-      { name: 'White',   value: '#ffffff' },
-      { name: 'Magenta', value: '#d946ef' },
-      { name: 'Lime',    value: '#84cc16' },
-      { name: 'Teal',    value: '#14b8a6' },
-      { name: 'Brown',   value: '#92400e' },
-      { name: 'Navy',    value: '#1e3a8a' },
-      { name: 'Maroon',  value: '#7f1d1d' },
+    const COLOR_PALETTE = [
+      '#E6194B', '#3CB44B', '#4363D8', '#F58231', '#911EB4',
+      '#42D4F4', '#F032E6', '#BFEF45', '#FABED4', '#469990',
+      '#9A6324', '#800000', '#AAFFC3', '#808000', '#FFD8B1',
+      '#000075', '#A9A9A9', '#FFE119', '#DCBEFF', '#000000',
     ];
 
-    const EYE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-    const EYE_OFF_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    const PALETTE_NAMES = [
+      'Red','Green','Blue','Orange','Purple',
+      'Cyan','Magenta','Lime','Pink','Teal',
+      'Brown','Maroon','Mint','Olive','Apricot',
+      'Navy','Gray','Yellow','Lavender','Black',
+    ];
 
     const map = L.map("map", { center: SAN_DIEGO, zoom: 11, zoomControl: true, doubleClickZoom: false });
 
@@ -935,30 +1084,7 @@
       opacity: 0.8,
     }).addTo(map);
 
-    // ── Map nav controls (Fit All Boats, Center on SD) ────────────────────────
-
-    const NavControl = L.Control.extend({
-      options: { position: 'topleft' },
-      onAdd() {
-        const div = L.DomUtil.create('div', 'map-nav-control');
-        L.DomEvent.disableClickPropagation(div);
-
-        const fitBtn = L.DomUtil.create('button', 'map-nav-btn', div);
-        fitBtn.innerHTML = '⊡ Fit All Boats';
-        fitBtn.title = 'Zoom to show all active boats';
-        L.DomEvent.on(fitBtn, 'click', e => { L.DomEvent.stop(e); fitAllBoats(); });
-
-        const centerBtn = L.DomUtil.create('button', 'map-nav-btn', div);
-        centerBtn.innerHTML = '⌖ San Diego';
-        centerBtn.title = 'Center on San Diego';
-        L.DomEvent.on(centerBtn, 'click', e => { L.DomEvent.stop(e); map.setView(SAN_DIEGO, 11); });
-
-        return div;
-      },
-    });
-    new NavControl().addTo(map);
-
-    // ── Nautical scale bar ────────────────────────────────────────────────────
+    // ── Nautical scale bar ──────────────────────────────────────────────────
 
     const NauticalScaleControl = L.Control.extend({
       options: { position: 'bottomleft' },
@@ -969,20 +1095,16 @@
         map.on('zoomend moveend', this._update, this);
         return this._div;
       },
-      onRemove(map) {
-        map.off('zoomend moveend', this._update, this);
-      },
+      onRemove(map) { map.off('zoomend moveend', this._update, this); },
       _update() {
         const maxPx = 110;
         const y = this._map.getSize().y / 2;
         const left  = this._map.containerPointToLatLng([0, y]);
         const right = this._map.containerPointToLatLng([maxPx, y]);
         const nmTotal = haversineNm(left.lat, left.lng, right.lat, right.lng);
-
         const steps = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 25, 50, 100, 200];
         const niceNm = steps.find(s => s >= nmTotal * 0.6) || 200;
         const px = Math.round(niceNm / nmTotal * maxPx);
-
         this._div.innerHTML =
           `<div class="ns-bar" style="width:${px}px"></div>` +
           `<div class="ns-label">${niceNm} nm</div>`;
@@ -990,45 +1112,14 @@
     });
     new NauticalScaleControl().addTo(map);
 
-    // ── Compass rose ──────────────────────────────────────────────────────────
+    // ── State ───────────────────────────────────────────────────────────────
 
-    const CompassControl = L.Control.extend({
-      options: { position: 'bottomright' },
-      onAdd() {
-        const div = L.DomUtil.create('div', 'compass-rose-control');
-        div.style.pointerEvents = 'none';
-        div.innerHTML = `
-          <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="28" cy="28" r="26" fill="rgba(11,26,46,0.82)" stroke="#1e3a5a" stroke-width="1.5"/>
-            <!-- N arrow -->
-            <path d="M28 6 L24 24 L28 21 L32 24 Z" fill="#f0f4f8"/>
-            <!-- S arrow -->
-            <path d="M28 50 L24 32 L28 35 L32 32 Z" fill="#3a5a78"/>
-            <!-- E arrow -->
-            <path d="M50 28 L32 24 L35 28 L32 32 Z" fill="#3a5a78"/>
-            <!-- W arrow -->
-            <path d="M6 28 L24 24 L21 28 L24 32 Z" fill="#3a5a78"/>
-            <!-- Center -->
-            <circle cx="28" cy="28" r="3" fill="#c9a227"/>
-            <!-- Labels -->
-            <text x="28" y="5" text-anchor="middle" dominant-baseline="hanging" fill="#f0f4f8" font-size="8" font-weight="700" font-family="Barlow Condensed,sans-serif" letter-spacing="0.5">N</text>
-            <text x="28" y="52" text-anchor="middle" dominant-baseline="auto" fill="#5a7a96" font-size="7" font-family="Barlow Condensed,sans-serif">S</text>
-            <text x="54" y="30" text-anchor="end" fill="#5a7a96" font-size="7" font-family="Barlow Condensed,sans-serif">E</text>
-            <text x="2" y="30" text-anchor="start" fill="#5a7a96" font-size="7" font-family="Barlow Condensed,sans-serif">W</text>
-          </svg>`;
-        return div;
-      },
-    });
-    new CompassControl().addTo(map);
-
-    // State
     const boatLayers = {};
     const savedPointLayers = [];
-    const hiddenBoats = new Set();
     let filterStart = null;
     let filterEnd = null;
     let filterActive = false;
-    let soloMmsi = null;
+    let focusedMmsi = null;   // replaces soloMmsi - fades others instead of hiding
     let boats = [];
     let cachedLatestMap = {};
     let cachedActiveBoats = [];
@@ -1036,6 +1127,7 @@
     let fishingGroundsVisible = false;
     const fishingGroundLayers = [];
     const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [14, 0] });
+    let sidebarCollapsed = true;  // starts collapsed
 
     const FISHING_GROUNDS = [
       { name: "43 Fathom Bank",  lat: 32.55,  lon: -117.48 },
@@ -1045,7 +1137,7 @@
       { name: "Tanner Bank",     lat: 32.70,  lon: -119.08 },
     ];
 
-    // ── Utilities ────────────────────────────────────────────────────────────
+    // ── Utilities ───────────────────────────────────────────────────────────
 
     function haversineNm(lat1, lon1, lat2, lon2) {
       const R = 3440.065;
@@ -1060,13 +1152,6 @@
       const dot = document.getElementById("status-dot");
       dot.className = state || "";
       document.getElementById("status-text").textContent = text;
-    }
-
-    function toggleManager() {
-      const panel = document.getElementById("manager-panel");
-      const btn = document.getElementById("manage-btn");
-      const open = panel.classList.toggle("open");
-      btn.classList.toggle("active", open);
     }
 
     function formatTs(ts) {
@@ -1089,34 +1174,16 @@
       return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
     }
 
-    function applyVisibility() {
-      for (const [mmsi, layers] of Object.entries(boatLayers)) {
-        let visible;
-        if (soloMmsi !== null) {
-          visible = mmsi === soloMmsi;
-        } else {
-          visible = !hiddenBoats.has(mmsi);
-        }
-        if (visible) {
-          if (!map.hasLayer(layers.polyline)) layers.polyline.addTo(map);
-          if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
-        } else {
-          layers.polyline.remove();
-          layers.marker.remove();
-        }
-      }
-    }
-
-    function fitAllBoats() {
-      const visiblePolylines = [];
-      for (const [mmsi, layers] of Object.entries(boatLayers)) {
-        if (soloMmsi !== null && mmsi !== soloMmsi) continue;
-        if (soloMmsi === null && hiddenBoats.has(mmsi)) continue;
-        visiblePolylines.push(layers.polyline);
-      }
-      if (visiblePolylines.length === 0) return;
-      const group = L.featureGroup(visiblePolylines);
-      map.fitBounds(group.getBounds(), { padding: [50, 50] });
+    function getBoatStatus(boat, latest) {
+      if (!latest) return { icon: '❓', text: 'No signal' };
+      const ageMin = (Date.now() - new Date(latest.timestamp).getTime()) / 60000;
+      if (ageMin > 240) return { icon: '❓', text: `No signal ${Math.round(ageMin / 60)}h` };
+      const dist = haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]);
+      if (dist < 2.0) return { icon: '⚓', text: 'At dock' };
+      const spd = latest.speed;
+      if (spd != null && spd < 1.5) return { icon: '🎣', text: 'Fishing' };
+      if (spd != null) return { icon: '🚤', text: `Running ${spd.toFixed(0)}kt` };
+      return { icon: '🚤', text: 'Underway' };
     }
 
     function nearestPoint(positions, lat, lng) {
@@ -1135,8 +1202,8 @@
         html: `<div style="width:30px;height:30px;transform:rotate(${deg}deg);transform-origin:center">
           <svg width="30" height="30" viewBox="0 0 30 30">
             <path d="M15 3 L10 27 L15 22 L20 27 Z"
-                  fill="${color}" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
-            <circle cx="15" cy="15" r="2.5" fill="white" opacity="0.75"/>
+                  fill="${color}" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="15" cy="15" r="2.5" fill="white" opacity="0.85"/>
           </svg>
         </div>`,
         iconSize: [30, 30],
@@ -1178,12 +1245,67 @@
       delete boatLayers[mmsi];
     }
 
+    // ── Track opacity (focus/fade) ───────────────────────────────────────────
+
+    function applyTrackOpacity() {
+      for (const [mmsi, layers] of Object.entries(boatLayers)) {
+        const isFocused = focusedMmsi === null || mmsi === focusedMmsi;
+        layers.polyline.setStyle({ opacity: isFocused ? 1 : 0.2 });
+        if (isFocused) {
+          if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
+          layers.marker.setOpacity(1);
+        } else {
+          layers.marker.setOpacity(0.35);
+          if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
+        }
+        if (!map.hasLayer(layers.polyline)) layers.polyline.addTo(map);
+      }
+    }
+
+    // ── Sidebar ─────────────────────────────────────────────────────────────
+
+    function toggleSidebar() {
+      sidebarCollapsed = !sidebarCollapsed;
+      const sidebar = document.getElementById("sidebar");
+      const toggle = document.getElementById("sidebar-toggle");
+      sidebar.classList.toggle("collapsed", sidebarCollapsed);
+      toggle.textContent = sidebarCollapsed ? "Vessels" : "✕";
+    }
+
+    function openSidebar() {
+      sidebarCollapsed = false;
+      document.getElementById("sidebar").classList.remove("collapsed");
+      document.getElementById("sidebar-toggle").textContent = "✕";
+    }
+
+    // ── Conditions bar ───────────────────────────────────────────────────────
+
+    function toggleConditions() {
+      const detail = document.getElementById("conditions-detail");
+      const arrow = document.getElementById("cond-toggle-arrow");
+      const open = detail.classList.toggle("open");
+      arrow.style.transform = open ? "rotate(180deg)" : "";
+    }
+
+    // ── More menu ────────────────────────────────────────────────────────────
+
+    function toggleMoreMenu(e) {
+      e.stopPropagation();
+      document.getElementById("more-menu-dropdown").classList.toggle("open");
+    }
+
+    function closeMoreMenu() {
+      document.getElementById("more-menu-dropdown").classList.remove("open");
+    }
+
+    document.addEventListener("click", () => closeMoreMenu());
+
     // ── Fishing grounds ──────────────────────────────────────────────────────
 
     function toggleFishingGrounds() {
-      const btn = document.getElementById("fishing-toggle");
       fishingGroundsVisible = !fishingGroundsVisible;
-      btn.classList.toggle("active", fishingGroundsVisible);
+      const item = document.getElementById("fishing-menu-item");
+      item.classList.toggle("active", fishingGroundsVisible);
 
       if (fishingGroundsVisible) {
         for (const ground of FISHING_GROUNDS) {
@@ -1192,9 +1314,7 @@
             zIndexOffset: -20,
           }).addTo(map);
           marker.bindTooltip(ground.name, {
-            permanent: true,
-            direction: "top",
-            offset: [0, -8],
+            permanent: true, direction: "top", offset: [0, -8],
             className: "fishing-ground-label",
           });
           fishingGroundLayers.push(marker);
@@ -1213,49 +1333,55 @@
     }
 
     function stopAutoRefresh() {
-      if (refreshInterval !== null) {
-        clearInterval(refreshInterval);
-        refreshInterval = null;
-      }
+      if (refreshInterval !== null) { clearInterval(refreshInterval); refreshInterval = null; }
     }
 
     // ── Date bar UI ──────────────────────────────────────────────────────────
 
     function updateDateBarUI() {
-      const noMsg = document.getElementById("no-vessel-msg");
-      const dateInputs = document.getElementById("date-inputs");
+      const bar = document.getElementById("date-bar");
       const liveModeBtn = document.getElementById("live-mode-btn");
-      if (soloMmsi) {
-        noMsg.style.display = "none";
-        dateInputs.style.display = "flex";
+      const vesselName = document.getElementById("date-bar-vessel-name");
+      if (focusedMmsi) {
+        bar.classList.add("visible");
+        const boat = boats.find(b => b.mmsi === focusedMmsi);
+        vesselName.textContent = boat ? boat.name : "";
         liveModeBtn.style.display = filterActive ? "inline-block" : "none";
       } else {
-        noMsg.style.display = "";
-        dateInputs.style.display = "none";
+        bar.classList.remove("visible");
         liveModeBtn.style.display = "none";
       }
     }
 
+    function updateMapLabel() {
+      const el = document.getElementById("map-info-label");
+      if (!el) return;
+      if (filterActive && (filterStart || filterEnd)) {
+        const fmtDate = s => s ? new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "…";
+        el.textContent = `Showing ${fmtDate(filterStart)} – ${fmtDate(filterEnd)}`;
+      } else {
+        el.textContent = "Showing last 7 days";
+      }
+    }
+
     async function applyFilter() {
-      if (!soloMmsi) return;
+      if (!focusedMmsi) return;
       filterStart = document.getElementById("date-start").value || null;
       filterEnd = document.getElementById("date-end").value || null;
       filterActive = !!(filterStart || filterEnd);
       if (filterActive) {
         stopAutoRefresh();
         for (const mmsi of Object.keys(boatLayers)) {
-          if (mmsi !== soloMmsi) removeBoatFromMap(mmsi);
+          if (mmsi !== focusedMmsi) removeBoatFromMap(mmsi);
         }
-        const boat = boats.find(b => b.mmsi === soloMmsi);
-        if (boat) {
-          await updateBoatOnMap(boat);
-          applyVisibility();
-        }
+        const boat = boats.find(b => b.mmsi === focusedMmsi);
+        if (boat) { await updateBoatOnMap(boat); applyTrackOpacity(); }
       } else {
         enterLiveMode();
         return;
       }
       updateDateBarUI();
+      updateMapLabel();
     }
 
     function enterLiveMode() {
@@ -1267,6 +1393,7 @@
       if (startEl) startEl.value = "";
       if (endEl) endEl.value = "";
       updateDateBarUI();
+      updateMapLabel();
       startAutoRefresh();
       refresh();
     }
@@ -1274,7 +1401,7 @@
     // ── Boat track rendering ─────────────────────────────────────────────────
 
     async function updateBoatOnMap(boat) {
-      const useFilter = filterActive && boat.mmsi === soloMmsi;
+      const useFilter = filterActive && boat.mmsi === focusedMmsi;
       const params = new URLSearchParams();
       if (useFilter && filterStart) params.set("start", filterStart);
       if (useFilter && filterEnd) params.set("end", filterEnd);
@@ -1298,24 +1425,23 @@
       const polyline = L.polyline(latLngs, {
         color: boat.color,
         weight: 4,
-        opacity: 0.9,
+        opacity: 1,
       }).addTo(map);
 
       polyline.on("mousemove", e => {
         const { lat, lng } = e.latlng;
         const near = nearestPoint(ordered, lat, lng);
-        const tsLine = near?.timestamp
-          ? `<br><span style="color:#7ab">${formatTs(near.timestamp)}</span>`
-          : "";
-        const spdLine = near?.speed != null
-          ? `<br><span style="color:#888">${near.speed.toFixed(1)} kn</span>`
-          : "";
-        coordTip
-          .setLatLng(e.latlng)
-          .setContent(`${lat.toFixed(5)}, ${lng.toFixed(5)}${tsLine}${spdLine}`)
-          .addTo(map);
+        const tsLine = near?.timestamp ? `<br><span style="color:#7ab">${formatTs(near.timestamp)}</span>` : "";
+        const spdLine = near?.speed != null ? `<br><span style="color:#888">${near.speed.toFixed(1)} kn</span>` : "";
+        coordTip.setLatLng(e.latlng).setContent(`${lat.toFixed(5)}, ${lng.toFixed(5)}${tsLine}${spdLine}`).addTo(map);
       });
       polyline.on("mouseout", () => coordTip.remove());
+
+      // Click on track selects this boat
+      polyline.on("click", e => {
+        L.DomEvent.stop(e);
+        setFocus(boat.mmsi);
+      });
 
       const latest = ordered[ordered.length - 1];
       const distNm = haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1);
@@ -1337,6 +1463,12 @@
 
       marker.on('mouseover', function() { this.openPopup(); });
 
+      // Click on marker selects this boat
+      marker.on('click', e => {
+        L.DomEvent.stop(e);
+        setFocus(boat.mmsi);
+      });
+
       marker.bindTooltip(boat.name, {
         permanent: true,
         direction: "top",
@@ -1347,6 +1479,36 @@
       boatLayers[boat.mmsi] = { polyline, marker, positions: ordered };
       return latest;
     }
+
+    // ── Focus / unfocus ──────────────────────────────────────────────────────
+
+    function setFocus(mmsi) {
+      if (focusedMmsi === mmsi) {
+        // Click same boat again: unfocus
+        focusedMmsi = null;
+        if (filterActive) { enterLiveMode(); return; }
+      } else {
+        focusedMmsi = mmsi;
+        const layer = boatLayers[mmsi];
+        if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
+      }
+      applyTrackOpacity();
+      renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
+      renderMobilePeek(cachedActiveBoats, cachedLatestMap);
+      updateDateBarUI();
+    }
+
+    // Click empty map to unfocus
+    map.on("click", () => {
+      if (focusedMmsi !== null) {
+        focusedMmsi = null;
+        if (filterActive) { enterLiveMode(); return; }
+        applyTrackOpacity();
+        renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
+        renderMobilePeek(cachedActiveBoats, cachedLatestMap);
+        updateDateBarUI();
+      }
+    });
 
     // ── Saved points ─────────────────────────────────────────────────────────
 
@@ -1365,15 +1527,13 @@
             ${pt.notes ? `<div class="pt-notes">${pt.notes}</div>` : ""}
             <div class="pt-date">${new Date(pt.created_at).toLocaleString()}</div>
           `;
-          const marker = L.marker([pt.lat, pt.lon], {
-            icon: makePinIcon(), zIndexOffset: -10,
-          }).addTo(map).bindPopup(div);
+          const marker = L.marker([pt.lat, pt.lon], { icon: makePinIcon(), zIndexOffset: -10 }).addTo(map).bindPopup(div);
           savedPointLayers.push(marker);
         }
       } catch {}
     }
 
-    // ── Click-to-save ────────────────────────────────────────────────────────
+    // ── Double-click to save note ─────────────────────────────────────────────
 
     map.on("dblclick", function(e) {
       const { lat, lng } = e.latlng;
@@ -1403,8 +1563,7 @@
         saveBtn.textContent = "Saving...";
         try {
           const res = await fetch("/api/points", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ lat, lon: lng, name, notes }),
           });
           if (res.ok) { map.closePopup(); await loadSavedPoints(); }
@@ -1415,6 +1574,55 @@
       });
       L.popup({ maxWidth: 260 }).setLatLng(e.latlng).setContent(div).openOn(map);
     });
+
+    // ── Color picker popup ────────────────────────────────────────────────────
+
+    let openColorPicker = null;
+
+    function buildColorPickerPopup(boat, dotEl, onClose) {
+      const popup = document.createElement("div");
+      popup.className = "color-picker-popup";
+
+      for (let i = 0; i < COLOR_PALETTE.length; i++) {
+        const color = COLOR_PALETTE[i];
+        const swatch = document.createElement("div");
+        swatch.className = "cpp-swatch" + (color.toUpperCase() === boat.color.toUpperCase() ? " selected" : "");
+        swatch.style.background = color;
+        swatch.title = PALETTE_NAMES[i];
+        swatch.addEventListener("click", async e => {
+          e.stopPropagation();
+          if (openColorPicker) { openColorPicker.remove(); openColorPicker = null; }
+          if (color.toUpperCase() === boat.color.toUpperCase()) return;
+          dotEl.style.background = color;
+          try {
+            const res = await fetch(`/api/boats/${boat.mmsi}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ color }),
+            });
+            if (!res.ok) throw new Error();
+            boat.color = color;
+            const layers = boatLayers[boat.mmsi];
+            if (layers) {
+              layers.polyline.setStyle({ color });
+              const latestPos = layers.positions[layers.positions.length - 1];
+              layers.marker.setIcon(makeBoatIcon(color, latestPos?.heading));
+            }
+            renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
+          } catch {
+            dotEl.style.background = boat.color;
+          }
+        });
+        popup.appendChild(swatch);
+      }
+
+      return popup;
+    }
+
+    function closeOpenColorPicker() {
+      if (openColorPicker) { openColorPicker.remove(); openColorPicker = null; }
+    }
+
+    document.addEventListener("click", closeOpenColorPicker);
 
     // ── Sidebar rendering ────────────────────────────────────────────────────
 
@@ -1427,118 +1635,215 @@
         return;
       }
 
-      // Sort most recently seen first
+      // Sort: active (not at dock) first by recency, dock at bottom
       const sorted = [...activeBoats].sort((a, b) => {
-        const tA = latestMap[a.mmsi]?.timestamp;
-        const tB = latestMap[b.mmsi]?.timestamp;
+        const la = latestMap[a.mmsi], lb = latestMap[b.mmsi];
+        const statusA = getBoatStatus(a, la);
+        const statusB = getBoatStatus(b, lb);
+        const dockA = statusA.icon === '⚓', dockB = statusB.icon === '⚓';
+        if (dockA !== dockB) return dockA ? 1 : -1;
+        const tA = la?.timestamp, tB = lb?.timestamp;
         if (!tA && !tB) return 0;
         if (!tA) return 1;
         if (!tB) return -1;
         return new Date(tB) - new Date(tA);
       });
 
-      const ONE_HOUR_MS = 60 * 60 * 1000;
-      const now = Date.now();
-
       for (const boat of sorted) {
         const latest = latestMap[boat.mmsi];
-        const card = document.createElement("div");
-        card.className = "boat-card" + (soloMmsi === boat.mmsi ? " solo-active" : "");
-
-        const speedText = latest?.speed != null ? `${latest.speed.toFixed(1)} kn` : "—";
-        const lastSeenText = formatLastSeen(latest?.timestamp);
+        const status = getBoatStatus(boat, latest);
+        const lastSeenText = latest ? formatLastSeen(latest.timestamp) : "No data";
         const distText = latest
-          ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) + " nm"
+          ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) + " nm from Point Loma"
           : "—";
 
-        const isRecent = latest?.timestamp &&
-          (now - new Date(latest.timestamp).getTime()) < ONE_HOUR_MS;
-        const isHidden = hiddenBoats.has(boat.mmsi);
-
-        // Build color options HTML
-        const hasExactMatch = COLOR_OPTIONS.some(c => c.value.toLowerCase() === boat.color.toLowerCase());
-        const customOpt = !hasExactMatch
-          ? `<option value="${boat.color}" selected>Custom (${boat.color})</option>` : '';
-        const colorOptsHtml = customOpt + COLOR_OPTIONS.map(c =>
-          `<option value="${c.value}"${!customOpt && c.value.toLowerCase() === boat.color.toLowerCase() ? ' selected' : ''}>${c.name}</option>`
-        ).join('');
+        const card = document.createElement("div");
+        card.className = "boat-card" + (focusedMmsi === boat.mmsi ? " focused" : "");
 
         card.innerHTML = `
-          <div class="activity-dot ${isRecent ? 'act-green' : 'act-red'}" title="${isRecent ? 'Seen in last hour' : 'Not seen recently'}"></div>
-          <div class="boat-dot" style="background:${boat.color}"></div>
-          <div class="boat-info">
-            <div class="boat-name">${boat.name}</div>
-            <div class="boat-mmsi">${boat.mmsi}</div>
-            <select class="color-select" title="Track color">${colorOptsHtml}</select>
-            <div class="boat-last-seen">${lastSeenText}</div>
+          <div class="bc-dot" style="background:${boat.color}"></div>
+          <div class="bc-body">
+            <div class="bc-name">${boat.name}</div>
+            <div class="bc-status">${status.icon} ${status.text}</div>
+            <div class="bc-meta">${distText} &middot; ${lastSeenText}</div>
           </div>
-          <div class="boat-speed-dist">
-            <div class="boat-speed">${speedText}</div>
-            <div class="boat-dist">${distText}</div>
-          </div>
-          <button class="eye-btn${isHidden ? ' eye-hidden' : ''}" title="${isHidden ? 'Show on map' : 'Hide on map'}">${isHidden ? EYE_OFF_SVG : EYE_SVG}</button>
+          <button class="bc-gear" title="Options">&#9881;</button>
         `;
 
-        const dot = card.querySelector(".boat-dot");
-        const colorSelect = card.querySelector(".color-select");
-        const eyeBtn = card.querySelector(".eye-btn");
+        const dotEl = card.querySelector(".bc-dot");
+        const gearBtn = card.querySelector(".bc-gear");
 
-        colorSelect.addEventListener("click", e => { e.stopPropagation(); });
+        // Card click: focus/unfocus
+        card.addEventListener("click", e => {
+          if (e.target === gearBtn || gearBtn.contains(e.target)) return;
+          setFocus(boat.mmsi);
+          // Open sidebar if closed
+          if (sidebarCollapsed) openSidebar();
+        });
 
-        colorSelect.addEventListener("change", async e => {
+        // Gear button
+        gearBtn.addEventListener("click", e => {
           e.stopPropagation();
-          const newColor = colorSelect.value;
-          dot.style.background = newColor;
-          try {
-            const res = await fetch(`/api/boats/${boat.mmsi}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ color: newColor }),
+          closeOpenColorPicker();
+          // Remove any existing menu
+          const existing = card.querySelector(".bc-menu");
+          if (existing) { existing.remove(); return; }
+          // Close other menus
+          document.querySelectorAll(".bc-menu").forEach(m => m.remove());
+
+          const menu = document.createElement("div");
+          menu.className = "bc-menu";
+          menu.innerHTML = `
+            <div class="bc-menu-item" data-action="color">&#127912; Change color</div>
+            <div class="bc-menu-item" data-action="rename">&#9998; Rename</div>
+            <div class="bc-menu-item danger" data-action="delete">&#128465; Delete</div>
+          `;
+          menu.addEventListener("click", e => e.stopPropagation());
+
+          menu.querySelector('[data-action="color"]').addEventListener("click", e => {
+            e.stopPropagation();
+            menu.remove();
+            const picker = buildColorPickerPopup(boat, dotEl, () => {});
+            picker.addEventListener("click", e => e.stopPropagation());
+            card.appendChild(picker);
+            openColorPicker = picker;
+          });
+
+          menu.querySelector('[data-action="rename"]').addEventListener("click", e => {
+            e.stopPropagation();
+            menu.remove();
+            const nameEl = card.querySelector(".bc-name");
+            const oldName = boat.name;
+            const input = document.createElement("input");
+            input.className = "bc-rename-input";
+            input.value = oldName;
+            nameEl.replaceWith(input);
+            input.focus();
+            input.select();
+
+            const commit = async () => {
+              const newName = input.value.trim();
+              if (newName && newName !== oldName) {
+                try {
+                  const res = await fetch(`/api/boats/${boat.mmsi}`, {
+                    method: "PUT", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: newName }),
+                  });
+                  if (res.ok) { boat.name = newName; await refresh(); return; }
+                } catch {}
+              }
+              renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
+            };
+            input.addEventListener("blur", commit);
+            input.addEventListener("keydown", e => {
+              if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+              if (e.key === "Escape") { input.value = oldName; input.blur(); }
             });
-            if (!res.ok) throw new Error();
-            boat.color = newColor;
-            const layers = boatLayers[boat.mmsi];
-            if (layers) {
-              layers.polyline.setStyle({ color: newColor });
-              const latestPos = layers.positions[layers.positions.length - 1];
-              layers.marker.setIcon(makeBoatIcon(newColor, latestPos?.heading));
-            }
-          } catch {
-            dot.style.background = boat.color;
-            colorSelect.value = boat.color;
-          }
-        });
+          });
 
-        eyeBtn.addEventListener("click", e => {
-          e.stopPropagation();
-          if (hiddenBoats.has(boat.mmsi)) {
-            hiddenBoats.delete(boat.mmsi);
-          } else {
-            hiddenBoats.add(boat.mmsi);
-          }
-          applyVisibility();
-          renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
-        });
+          menu.querySelector('[data-action="delete"]').addEventListener("click", async e => {
+            e.stopPropagation();
+            menu.remove();
+            if (!confirm(`Delete "${boat.name}"? This removes all recorded positions.`)) return;
+            try {
+              const res = await fetch(`/api/boats/${boat.mmsi}`, { method: "DELETE" });
+              if (res.ok) { removeBoatFromMap(boat.mmsi); await refresh(); }
+            } catch {}
+          });
 
-        card.addEventListener("click", () => {
-          if (soloMmsi === boat.mmsi) {
-            soloMmsi = null;
-            if (filterActive) { enterLiveMode(); return; }
-          } else {
-            soloMmsi = boat.mmsi;
-            const layer = boatLayers[boat.mmsi];
-            if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
-          }
-          applyVisibility();
-          renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
-          updateDateBarUI();
+          card.appendChild(menu);
         });
 
         list.appendChild(card);
       }
+
+      // Also update mobile list
+      renderMobileBoatList(sorted, latestMap);
     }
 
-    // ── Manager panel rendering ──────────────────────────────────────────────
+    // ── Mobile peek card ─────────────────────────────────────────────────────
+
+    function renderMobilePeek(activeBoats, latestMap) {
+      const mpDot = document.getElementById("mp-dot");
+      const mpName = document.getElementById("mp-name");
+      const mpStatus = document.getElementById("mp-status");
+      if (activeBoats.length === 0) {
+        mpName.textContent = "No vessels";
+        mpStatus.textContent = "";
+        mpDot.style.background = "#333";
+        return;
+      }
+
+      // Show focused boat or most recently active
+      let boat = focusedMmsi ? activeBoats.find(b => b.mmsi === focusedMmsi) : null;
+      if (!boat) {
+        boat = [...activeBoats].sort((a, b) => {
+          const tA = latestMap[a.mmsi]?.timestamp;
+          const tB = latestMap[b.mmsi]?.timestamp;
+          if (!tA && !tB) return 0;
+          if (!tA) return 1;
+          if (!tB) return -1;
+          return new Date(tB) - new Date(tA);
+        })[0];
+      }
+
+      const latest = latestMap[boat?.mmsi];
+      const status = getBoatStatus(boat, latest);
+      mpDot.style.background = boat.color;
+      mpName.textContent = boat.name;
+      mpStatus.textContent = `${status.icon} ${status.text}`;
+    }
+
+    function renderMobileBoatList(sorted, latestMap) {
+      const list = document.getElementById("mobile-boat-list");
+      if (!list) return;
+      list.innerHTML = "";
+      for (const boat of sorted) {
+        const latest = latestMap[boat.mmsi];
+        const status = getBoatStatus(boat, latest);
+        const lastSeenText = latest ? formatLastSeen(latest.timestamp) : "No data";
+        const distText = latest
+          ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) + " nm from Point Loma"
+          : "—";
+
+        const card = document.createElement("div");
+        card.className = "boat-card" + (focusedMmsi === boat.mmsi ? " focused" : "");
+        card.innerHTML = `
+          <div class="bc-dot" style="background:${boat.color}"></div>
+          <div class="bc-body">
+            <div class="bc-name">${boat.name}</div>
+            <div class="bc-status">${status.icon} ${status.text}</div>
+            <div class="bc-meta">${distText} &middot; ${lastSeenText}</div>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          setFocus(boat.mmsi);
+          closeMobileSheet();
+          const layer = boatLayers[boat.mmsi];
+          if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
+        });
+        list.appendChild(card);
+      }
+    }
+
+    function openMobileSheet() {
+      document.getElementById("mobile-sheet").classList.add("open");
+      document.getElementById("sheet-overlay").classList.add("open");
+    }
+
+    function closeMobileSheet() {
+      document.getElementById("mobile-sheet").classList.remove("open");
+      document.getElementById("sheet-overlay").classList.remove("open");
+    }
+
+    // ── Manager panel rendering ───────────────────────────────────────────────
+
+    function toggleManager() {
+      const panel = document.getElementById("manager-panel");
+      const btn = document.getElementById("manage-btn");
+      const open = panel.classList.toggle("open");
+      btn.classList.toggle("active", open);
+    }
 
     function renderManagerList(boatList) {
       const list = document.getElementById("manager-boat-list");
@@ -1560,7 +1865,6 @@
             <input type="checkbox" ${boat.active ? "checked" : ""} />
             <span class="toggle-slider"></span>
           </label>
-          <button class="btn-sm backfill-btn" title="Fetch last 24h of positions">Backfill</button>
           <button class="btn-sm danger delete-btn" title="Delete vessel">Del</button>
         `;
         const checkbox = item.querySelector("input[type=checkbox]");
@@ -1574,20 +1878,6 @@
             if (res.ok) await refresh(); else checkbox.checked = !checkbox.checked;
           } finally { checkbox.disabled = false; }
         });
-        const backfillBtn = item.querySelector(".backfill-btn");
-        backfillBtn.addEventListener("click", async () => {
-          backfillBtn.textContent = "..."; backfillBtn.disabled = true;
-          try {
-            const res = await fetch(`/api/boats/${boat.mmsi}/backfill`, { method: "POST" });
-            const data = await res.json();
-            backfillBtn.textContent = `+${data.inserted ?? 0}`;
-            setTimeout(() => { backfillBtn.textContent = "Backfill"; }, 3000);
-            if ((data.inserted ?? 0) > 0) await refresh();
-          } catch {
-            backfillBtn.textContent = "Err";
-            setTimeout(() => { backfillBtn.textContent = "Backfill"; }, 2000);
-          } finally { backfillBtn.disabled = false; }
-        });
         const deleteBtn = item.querySelector(".delete-btn");
         deleteBtn.addEventListener("click", async () => {
           if (!confirm(`Delete "${boat.name}"? This will also remove all recorded positions.`)) return;
@@ -1599,6 +1889,15 @@
         });
         list.appendChild(item);
       }
+    }
+
+    // ── Fit all boats ────────────────────────────────────────────────────────
+
+    function fitAllBoats() {
+      const polylines = Object.values(boatLayers).map(l => l.polyline);
+      if (polylines.length === 0) return;
+      const group = L.featureGroup(polylines);
+      map.fitBounds(group.getBounds(), { padding: [50, 50] });
     }
 
     // ── Main refresh ─────────────────────────────────────────────────────────
@@ -1619,7 +1918,7 @@
       cachedLatestMap = {};
       let anyPosition = false;
       const activeSet = new Set(boats.filter(b => b.active).map(b => b.mmsi));
-      if (soloMmsi && !activeSet.has(soloMmsi)) soloMmsi = null;
+      if (focusedMmsi && !activeSet.has(focusedMmsi)) focusedMmsi = null;
       for (const boat of boats) {
         if (!boat.active) {
           removeBoatFromMap(boat.mmsi);
@@ -1630,10 +1929,12 @@
         }
       }
       cachedActiveBoats = boats.filter(b => b.active);
+      applyTrackOpacity();
       renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
+      renderMobilePeek(cachedActiveBoats, cachedLatestMap);
       renderManagerList(boats);
-      applyVisibility();
       updateDateBarUI();
+      updateMapLabel();
       if (anyPosition) {
         setStatus("live", "Live");
       } else if (boats.some(b => b.active)) {
@@ -1643,7 +1944,7 @@
       }
     }
 
-    // ── Add boat form ────────────────────────────────────────────────────────
+    // ── Add boat form ─────────────────────────────────────────────────────────
 
     document.getElementById("new-boat-color").addEventListener("input", e => {
       document.getElementById("new-boat-color-label").textContent = e.target.value;
@@ -1682,7 +1983,14 @@
       }
     });
 
-    // ── Marine widgets ───────────────────────────────────────────────────────
+    // ── Marine widgets ────────────────────────────────────────────────────────
+
+    let condTide = '—', condWind = '—', condTemp = '—';
+
+    function updateCondSummary() {
+      document.getElementById("cond-summary-text").textContent =
+        `🌊 ${condTide} tide · 💨 ${condWind} · 🌡 ${condTemp}`;
+    }
 
     async function loadTide() {
       const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9410170&product=water_level&datum=MLLW&time_zone=lst_ldt&units=english&format=json&date=today`;
@@ -1696,6 +2004,8 @@
         document.getElementById("tide-val").classList.remove("loading");
         document.getElementById("tide-val").innerHTML = `${ft} <span class="widget-unit">ft</span>`;
         document.getElementById("tide-sub").textContent = "MLLW · SD Bay";
+        condTide = `${ft}ft`;
+        updateCondSummary();
       } catch {
         document.getElementById("tide-val").textContent = "N/A";
         document.getElementById("tide-val").classList.remove("loading");
@@ -1703,17 +2013,14 @@
     }
 
     async function loadBuoyData() {
-      const url = "https://www.ndbc.noaa.gov/data/realtime2/46225.txt";
+      const url = "/api/proxy/ndbc/46225";
       try {
         const res = await fetch(url);
         const text = await res.text();
         const lines = text.trim().split('\n');
         if (lines.length < 3) throw new Error();
         const parts = lines[2].trim().split(/\s+/);
-        const wdir = parts[5];
-        const wspd = parts[6];
-        const wtmp = parts[14];
-
+        const wdir = parts[5], wspd = parts[6], wtmp = parts[14];
         const wspdKts = wspd !== 'MM' ? (parseFloat(wspd) * 1.944).toFixed(0) : null;
         const wtmpF   = wtmp !== 'MM' ? (parseFloat(wtmp) * 9/5 + 32).toFixed(1) : null;
         const cardinals = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -1723,6 +2030,7 @@
           document.getElementById("wind-val").innerHTML = `${wspdKts} <span class="widget-unit">kts</span>`;
           document.getElementById("wind-val").classList.remove("loading");
           document.getElementById("wind-sub").textContent = wdirCard ? `From ${wdirCard}` : "46225";
+          condWind = `${wspdKts}kt ${wdirCard || ''}`.trim();
         } else {
           document.getElementById("wind-val").textContent = "N/A";
           document.getElementById("wind-val").classList.remove("loading");
@@ -1732,10 +2040,12 @@
           document.getElementById("sst-val").innerHTML = `${wtmpF} <span class="widget-unit">°F</span>`;
           document.getElementById("sst-val").classList.remove("loading");
           document.getElementById("sst-sub").textContent = "Buoy 46225";
+          condTemp = `${wtmpF}°F`;
         } else {
           document.getElementById("sst-val").textContent = "N/A";
           document.getElementById("sst-val").classList.remove("loading");
         }
+        updateCondSummary();
       } catch {
         document.getElementById("wind-val").textContent = "N/A";
         document.getElementById("wind-val").classList.remove("loading");
@@ -1758,7 +2068,6 @@
       const rad = Math.PI / 180;
       const J2000 = 2451545.0;
       const toJD = d => (d.getTime() / 86400000) + 2440587.5;
-
       const jd = toJD(date);
       const n = Math.ceil(jd - J2000 - 0.0009 + lon / 360);
       const Jstar = J2000 + 0.0009 - lon / 360 + n;
@@ -1771,10 +2080,7 @@
       if (cosH < -1 || cosH > 1) return { rise: null, set: null };
       const H = Math.acos(cosH) / rad;
       const fromJD = j => new Date((j - 2440587.5) * 86400000);
-      return {
-        rise: fromJD(Jtransit - H / 360),
-        set: fromJD(Jtransit + H / 360),
-      };
+      return { rise: fromJD(Jtransit - H / 360), set: fromJD(Jtransit + H / 360) };
     }
 
     async function loadWidgets() {
@@ -1782,7 +2088,7 @@
       await Promise.allSettled([loadTide(), loadBuoyData()]);
     }
 
-    // ── Initial load ─────────────────────────────────────────────────────────
+    // ── Initial load ──────────────────────────────────────────────────────────
 
     refresh();
     loadSavedPoints();
