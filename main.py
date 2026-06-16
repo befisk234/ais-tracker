@@ -1,10 +1,13 @@
 import asyncio
 import json
 import logging
+import math
 import os
+import urllib.request
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
 import asyncpg
 import websockets
@@ -27,14 +30,16 @@ ADMIN_PASS = os.getenv("ADMIN_PASS", "changeme")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
 SESSION_COOKIE = "ais_session"
 
-# Reconnect before Railway's 15-minute idle timeout kills the connection
 RECONNECT_INTERVAL = 14 * 60
 GLOBAL_BBOX = [[[-90, -180], [90, 180]]]
 
 _serializer = URLSafeTimedSerializer(SECRET_KEY)
 db_pool: asyncpg.Pool | None = None
-tracked_mmsis: dict[str, str] = {}  # mmsi -> ship name
+tracked_mmsis: dict[str, str] = {}
 stream_task: asyncio.Task | None = None
+
+HOME_LAT, HOME_LON = 32.6644, -117.2417
+HOME_RADIUS_NM = 2.0
 
 
 LOGIN_HTML = """\
@@ -119,9 +124,18 @@ async def init_db(pool: asyncpg.Pool) -> None:
     log.info("Database schema initialized")
 
 
+def _nm_dist(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 3440.065
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
 async def ais_stream_task(pool: asyncpg.Pool) -> None:
-    """Connect to AISstream.io WebSocket, filtering by tracked MMSIs, reconnecting every 14 minutes."""
     uri = "wss://stream.aisstream.io/v0/stream"
+    boat_home_state: dict[str, bool] = {}
 
     while True:
         try:
@@ -134,7 +148,7 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                     "FilterMessageTypes": ["PositionReport", "StandardClassBPositionReport"],
                     "MMSI": mmsi_list,
                 }))
-                log.info("Subscribed to AISstream.io for %d MMSI(s): %s", len(mmsi_list), mmsi_list)
+                log.info("Subscribed to AISstream.io for %d MMSI(s)", len(mmsi_list))
 
                 deadline = asyncio.get_event_loop().time() + RECONNECT_INTERVAL
 
@@ -152,7 +166,6 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                     try:
                         msg = json.loads(raw)
                     except json.JSONDecodeError:
-                        log.warning("Unparseable AIS message: %s", raw[:200])
                         continue
 
                     meta = msg.get("MetaData", {})
@@ -181,6 +194,24 @@ async def ais_stream_task(pool: asyncpg.Pool) -> None:
                                 float(speed) if speed is not None else None,
                                 float(heading) if heading is not None else None,
                             )
+
+                        # Detect departure / arrival for notifications
+                        dist = _nm_dist(float(lat), float(lon), HOME_LAT, HOME_LON)
+                        was_home = boat_home_state.get(mmsi, True)
+                        is_home = dist < HOME_RADIUS_NM
+
+                        if was_home and not is_home:
+                            await pool.execute(
+                                "INSERT INTO notifications (type, message, mmsi) VALUES ($1, $2, $3)",
+                                "departure", f"{ship_name} departed — {dist:.1f} nm from Point Loma", mmsi,
+                            )
+                        elif not was_home and is_home:
+                            await pool.execute(
+                                "INSERT INTO notifications (type, message, mmsi) VALUES ($1, $2, $3)",
+                                "arrival", f"{ship_name} returned to dock", mmsi,
+                            )
+
+                        boat_home_state[mmsi] = is_home
                         log.info("Saved position for MMSI %s (%s)", mmsi, ship_name)
                     except Exception:
                         log.exception("Error saving position for MMSI=%s", mmsi)
@@ -203,7 +234,7 @@ async def lifespan(app: FastAPI):
         tracked_mmsis = {row["mmsi"]: row["name"] for row in rows}
 
     stream_task = asyncio.create_task(ais_stream_task(db_pool))
-    log.info("AIS stream task started, tracking %d boat(s): %s", len(tracked_mmsis), list(tracked_mmsis))
+    log.info("AIS stream task started, tracking %d boat(s)", len(tracked_mmsis))
 
     yield
 
@@ -355,6 +386,12 @@ async def delete_boat(mmsi: str):
     return Response(status_code=204)
 
 
+@app.post("/api/boats/{mmsi}/backfill")
+async def backfill_positions(mmsi: str):
+    # AISstream free tier doesn't support historical data retrieval
+    return {"inserted": 0, "message": "History API not available on free tier"}
+
+
 # ---------------------------------------------------------------------------
 # Position API
 # ---------------------------------------------------------------------------
@@ -400,6 +437,243 @@ async def get_positions(
     return [dict(r) for r in rows]
 
 
+@app.get("/api/heatmap-positions")
+async def get_fleet_positions(hours: int = 24):
+    pool = await get_pool()
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT mmsi, lat, lon, speed, heading, timestamp FROM positions "
+            "WHERE timestamp >= $1 ORDER BY timestamp DESC LIMIT 20000",
+            since,
+        )
+    return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Trips API
+# ---------------------------------------------------------------------------
+
+@app.get("/api/boats/{mmsi}/trips")
+async def get_trips(mmsi: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT lat, lon, speed, heading, timestamp FROM positions "
+            "WHERE mmsi = $1 ORDER BY timestamp ASC",
+            mmsi,
+        )
+
+    if not rows:
+        return []
+
+    MIN_TRIP_HOURS = 1.5
+
+    trips: list[dict] = []
+    trip_start: datetime | None = None
+    trip_positions: list[dict] = []
+
+    for row in rows:
+        dist = _nm_dist(row["lat"], row["lon"], HOME_LAT, HOME_LON)
+        at_home = dist < HOME_RADIUS_NM
+
+        if not at_home:
+            if trip_start is None:
+                trip_start = row["timestamp"]
+                trip_positions = []
+            trip_positions.append(dict(row))
+        else:
+            if trip_start is not None and trip_positions:
+                trip_end = trip_positions[-1]["timestamp"]
+                duration_h = (trip_end - trip_start).total_seconds() / 3600
+                if duration_h >= MIN_TRIP_HOURS:
+                    max_range = max(
+                        _nm_dist(p["lat"], p["lon"], HOME_LAT, HOME_LON)
+                        for p in trip_positions
+                    )
+                    speeds = [p["speed"] for p in trip_positions if p["speed"] is not None]
+                    avg_speed = sum(speeds) / len(speeds) if speeds else 0
+                    total_dist = sum(
+                        _nm_dist(trip_positions[i]["lat"], trip_positions[i]["lon"],
+                                 trip_positions[i-1]["lat"], trip_positions[i-1]["lon"])
+                        for i in range(1, len(trip_positions))
+                    )
+                    trips.append({
+                        "index": len(trips),
+                        "start": trip_start.isoformat(),
+                        "end": trip_end.isoformat(),
+                        "duration_h": round(duration_h, 1),
+                        "max_range_nm": round(max_range, 1),
+                        "total_dist_nm": round(total_dist, 1),
+                        "avg_speed_kt": round(avg_speed, 1),
+                        "position_count": len(trip_positions),
+                        "ongoing": False,
+                    })
+                trip_start = None
+                trip_positions = []
+
+    # Handle ongoing trip
+    if trip_start and trip_positions:
+        trip_end = trip_positions[-1]["timestamp"]
+        duration_h = (trip_end - trip_start).total_seconds() / 3600
+        if duration_h >= 0.25:
+            max_range = max(
+                _nm_dist(p["lat"], p["lon"], HOME_LAT, HOME_LON)
+                for p in trip_positions
+            )
+            speeds = [p["speed"] for p in trip_positions if p["speed"] is not None]
+            avg_speed = sum(speeds) / len(speeds) if speeds else 0
+            total_dist = sum(
+                _nm_dist(trip_positions[i]["lat"], trip_positions[i]["lon"],
+                         trip_positions[i-1]["lat"], trip_positions[i-1]["lon"])
+                for i in range(1, len(trip_positions))
+            )
+            trips.append({
+                "index": len(trips),
+                "start": trip_start.isoformat(),
+                "end": None,
+                "duration_h": round(duration_h, 1),
+                "max_range_nm": round(max_range, 1),
+                "total_dist_nm": round(total_dist, 1),
+                "avg_speed_kt": round(avg_speed, 1),
+                "position_count": len(trip_positions),
+                "ongoing": True,
+            })
+
+    return list(reversed(trips))
+
+
+@app.get("/api/boats/{mmsi}/trips/{trip_index}/gpx")
+async def export_trip_gpx(mmsi: str, trip_index: int, start: str, end: str):
+    pool = await get_pool()
+    start_dt = _parse_dt(start)
+    end_dt = _parse_dt(end)
+    if not start_dt or not end_dt:
+        raise HTTPException(400, "Invalid date range")
+
+    async with pool.acquire() as conn:
+        boat = await conn.fetchrow("SELECT name FROM boats WHERE mmsi = $1", mmsi)
+        rows = await conn.fetch(
+            "SELECT lat, lon, speed, heading, timestamp FROM positions "
+            "WHERE mmsi = $1 AND timestamp BETWEEN $2 AND $3 ORDER BY timestamp ASC",
+            mmsi, start_dt, end_dt,
+        )
+
+    if not rows or not boat:
+        raise HTTPException(404, "Trip not found")
+
+    boat_name = boat["name"]
+    gpx_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<gpx version="1.1" creator="SD Fish Tracker" xmlns="http://www.topografix.com/GPX/1/1">',
+        "  <trk>",
+        f"    <name>{boat_name} Trip {trip_index + 1}</name>",
+        "    <trkseg>",
+    ]
+    for row in rows:
+        ts = row["timestamp"].strftime("%Y-%m-%dT%H:%M:%SZ")
+        gpx_lines.append(f'      <trkpt lat="{row["lat"]}" lon="{row["lon"]}"><time>{ts}</time></trkpt>')
+    gpx_lines += ["    </trkseg>", "  </trk>", "</gpx>"]
+
+    filename = f"{boat_name.replace(' ', '_')}_trip_{trip_index + 1}.gpx"
+    return Response(
+        content="\n".join(gpx_lines),
+        media_type="application/gpx+xml",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Hot spots
+# ---------------------------------------------------------------------------
+
+@app.get("/api/spots/hot")
+async def get_hot_spots(days: int = 7):
+    pool = await get_pool()
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                ROUND(lat::numeric, 2) AS grid_lat,
+                ROUND(lon::numeric, 2) AS grid_lon,
+                COUNT(DISTINCT mmsi) AS boat_count,
+                COUNT(*) AS hit_count,
+                AVG(lat) AS center_lat,
+                AVG(lon) AS center_lon,
+                MAX(timestamp) AS last_seen
+            FROM positions
+            WHERE timestamp >= $1 AND speed IS NOT NULL AND speed < 2.5
+            GROUP BY ROUND(lat::numeric, 2), ROUND(lon::numeric, 2)
+            HAVING COUNT(DISTINCT mmsi) >= 1
+            ORDER BY boat_count DESC, hit_count DESC
+            LIMIT 20
+            """,
+            since,
+        )
+    return [
+        {
+            "lat": float(r["center_lat"]),
+            "lon": float(r["center_lon"]),
+            "boat_count": r["boat_count"],
+            "hit_count": r["hit_count"],
+            "last_seen": r["last_seen"].isoformat() if r["last_seen"] else None,
+        }
+        for r in rows
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Notifications API
+# ---------------------------------------------------------------------------
+
+class NotificationCreate(BaseModel):
+    type: str = "info"
+    message: str
+    mmsi: str | None = None
+    data: dict[str, Any] = {}
+
+
+@app.get("/api/notifications")
+async def list_notifications(limit: int = 50):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, type, message, mmsi, data, read, created_at FROM notifications "
+            "ORDER BY created_at DESC LIMIT $1",
+            limit,
+        )
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/notifications", status_code=201)
+async def create_notification(notif: NotificationCreate):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO notifications (type, message, mmsi, data) VALUES ($1, $2, $3, $4) "
+            "RETURNING id, type, message, mmsi, data, read, created_at",
+            notif.type, notif.message, notif.mmsi, json.dumps(notif.data),
+        )
+    return dict(row)
+
+
+@app.patch("/api/notifications/{notif_id}/read")
+async def mark_notification_read(notif_id: int):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE notifications SET read = TRUE WHERE id = $1", notif_id)
+    return {"ok": True}
+
+
+@app.delete("/api/notifications/read", status_code=204)
+async def clear_read_notifications():
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM notifications WHERE read = TRUE")
+    return Response(status_code=204)
+
+
 # ---------------------------------------------------------------------------
 # Saved points API
 # ---------------------------------------------------------------------------
@@ -431,3 +705,52 @@ async def list_points():
             "SELECT id, lat, lon, name, notes, created_at FROM saved_points ORDER BY created_at DESC"
         )
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Preferences API
+# ---------------------------------------------------------------------------
+
+class PrefUpdate(BaseModel):
+    key: str
+    value: Any
+
+
+@app.get("/api/prefs")
+async def get_prefs():
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT key, value FROM user_preferences")
+    return {r["key"]: r["value"] for r in rows}
+
+
+@app.put("/api/prefs")
+async def set_pref(update: PrefUpdate):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO user_preferences (key, value, updated_at) VALUES ($1, $2, NOW()) "
+            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()",
+            update.key, json.dumps(update.value),
+        )
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Proxy: NDBC buoy data (avoids CORS issues in some browsers)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/proxy/ndbc/{station}")
+async def proxy_ndbc(station: str):
+    if not station.isalnum():
+        raise HTTPException(400, "Invalid station ID")
+    url = f"https://www.ndbc.noaa.gov/data/realtime2/{station}.txt"
+    try:
+        loop = asyncio.get_event_loop()
+        text = await loop.run_in_executor(
+            None,
+            lambda: urllib.request.urlopen(url, timeout=10).read().decode("utf-8", errors="replace"),
+        )
+        return Response(content=text, media_type="text/plain")
+    except Exception as exc:
+        raise HTTPException(502, f"Failed to fetch buoy data: {exc}")
