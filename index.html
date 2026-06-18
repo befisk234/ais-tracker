@@ -947,6 +947,205 @@
     }
     #trip-banner-exit:hover { background: var(--seafoam); color: var(--navy); }
 
+    /* ── Hot Spots panel (desktop, left side) ── */
+    #hotspots-panel {
+      position: fixed;
+      top: 48px;
+      left: 0;
+      bottom: 0;
+      z-index: 1000;
+      background: var(--navy2);
+      border-right: 1px solid var(--border);
+      width: 272px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+      transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    #hotspots-panel.collapsed { transform: translateX(-272px); }
+
+    #hotspots-sidebar-toggle {
+      position: fixed;
+      left: 0;
+      top: 33%;
+      transform: translateY(-50%);
+      z-index: 1050;
+      background: rgba(17,34,64,0.92);
+      border: 1px solid var(--border);
+      border-left: none;
+      border-radius: 0 6px 6px 0;
+      color: var(--mist);
+      padding: 12px 7px;
+      font-size: 13px;
+      cursor: pointer;
+      line-height: 1;
+      writing-mode: vertical-lr;
+      letter-spacing: 1px;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    #hotspots-sidebar-toggle:hover { background: var(--navy3); color: var(--brass2); }
+    #hotspots-sidebar-toggle.active { background: #2a1f00; border-color: var(--brass); color: var(--brass2); }
+
+    #hotspots-panel-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px 6px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #hotspots-panel-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--brass);
+      flex: 1;
+    }
+    #hotspots-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 8px;
+    }
+    .hs-empty {
+      font-size: 13px;
+      color: var(--dim);
+      text-align: center;
+      padding: 16px 0;
+    }
+    .hs-row {
+      padding: 9px 8px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.12s;
+      margin-bottom: 3px;
+      border: 1px solid transparent;
+    }
+    .hs-row:hover { background: var(--navy3); border-color: var(--border); }
+    .hs-row-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hs-row-boat {
+      font-size: 13px;
+      color: var(--mist);
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hs-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,0.3);
+    }
+    .hs-row-meta {
+      font-size: 11px;
+      color: var(--dim);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Hotspot marker duration label */
+    .hs-duration-label {
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      text-align: center;
+      pointer-events: none;
+      white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+    .hs-duration-label::before { display: none !important; }
+
+    /* Mobile Hot Spots floating button */
+    #mobile-hotspots-btn {
+      display: none;
+      position: fixed;
+      bottom: 84px;
+      left: 12px;
+      z-index: 1000;
+      background: rgba(17,34,64,0.95);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--mist);
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    #mobile-hotspots-btn:hover { color: var(--brass2); border-color: var(--brass); }
+
+    /* Mobile Hot Spots sheet */
+    #hotspots-sheet {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 1100;
+      background: var(--navy2);
+      border-top: 2px solid var(--brass);
+      border-radius: 14px 14px 0 0;
+      max-height: 70vh;
+      overflow-y: auto;
+      transform: translateY(110%);
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      padding: 8px 0 24px;
+    }
+    #hotspots-sheet.open { transform: translateY(0); }
+    #hotspots-sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 10px;
+    }
+    #hotspots-sheet-header {
+      display: flex;
+      align-items: center;
+      padding: 0 14px 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+    #hotspots-sheet-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--brass);
+      flex: 1;
+    }
+    #hotspots-sheet-close {
+      position: absolute;
+      top: 12px; right: 14px;
+      background: none; border: none;
+      color: var(--dim); font-size: 22px;
+      cursor: pointer; line-height: 1;
+      padding: 4px;
+    }
+    #hotspots-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1090;
+    }
+    #hotspots-overlay.open { display: block; }
 
     /* ── Mobile ── */
     @media (max-width: 767px) {
@@ -958,6 +1157,8 @@
 
       #sidebar { display: none !important; }
       #sidebar-toggle { display: none !important; }
+      #hotspots-panel { display: none !important; }
+      #hotspots-sidebar-toggle { display: none !important; }
       #more-menu-wrap { top: 8px; right: 8px; }
 
       #map { margin-bottom: 76px; }
@@ -965,12 +1166,17 @@
 
       #mobile-peek { display: block; }
       #mobile-sheet { display: block; }
+      #mobile-hotspots-btn { display: block; }
+      #hotspots-sheet { display: block; }
     }
 
     @media (min-width: 768px) {
       #mobile-peek { display: none !important; }
       #mobile-sheet { display: none !important; }
       #sheet-overlay { display: none !important; }
+      #mobile-hotspots-btn { display: none !important; }
+      #hotspots-sheet { display: none !important; }
+      #hotspots-overlay { display: none !important; }
     }
   </style>
 </head>
@@ -1145,6 +1351,33 @@
     <div id="mobile-boat-list" style="padding: 0 8px 8px;"></div>
   </div>
 
+  <!-- Hot Spots toggle button (desktop, left edge) -->
+  <button id="hotspots-sidebar-toggle" onclick="toggleHotspotsPanel()">Hot Spots (0)</button>
+
+  <!-- Hot Spots panel (desktop, left side) -->
+  <div id="hotspots-panel" class="collapsed">
+    <div id="hotspots-panel-header">
+      <h2>Hot Spots</h2>
+      <button class="panel-close" onclick="toggleHotspotsPanel()" title="Close">&times;</button>
+    </div>
+    <div id="hotspots-list">
+      <div class="hs-empty">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Mobile Hot Spots floating button -->
+  <button id="mobile-hotspots-btn" onclick="openHotspotsSheet()">Hot Spots (0)</button>
+
+  <!-- Mobile Hot Spots sheet -->
+  <div id="hotspots-overlay" onclick="closeHotspotsSheet()"></div>
+  <div id="hotspots-sheet">
+    <div id="hotspots-sheet-handle"></div>
+    <button id="hotspots-sheet-close" onclick="closeHotspotsSheet()">&#215;</button>
+    <div id="hotspots-sheet-header">
+      <h2>Hot Spots</h2>
+    </div>
+    <div id="hotspots-sheet-list" style="padding: 0 8px 8px;"></div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -1230,6 +1463,11 @@
 
     // Boat status cache (mmsi -> status object from /api/boats/{mmsi}/status)
     let cachedStatusMap = {};
+
+    // Hot Spots state
+    let cachedHotspots = [];
+    let hotspotLayers = [];
+    let hotspotsPanelOpen = false;
 
     const FISHING_BANKS = [
       // INSHORE — green (within ~30nm of Point Loma)
@@ -1354,6 +1592,14 @@
       if (diffHrs < 24) return remMin > 0 ? `${diffHrs}h ${remMin}m ago` : `${diffHrs}h ago`;
       const diffDays = Math.floor(diffHrs / 24);
       return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+    }
+
+    function formatHsDuration(minutes) {
+      const h = Math.floor(minutes / 60);
+      const m = Math.round(minutes % 60);
+      if (h === 0) return `${m} min`;
+      if (m === 0) return `${h}h`;
+      return `${h}h ${m}m`;
     }
 
     function getBoatStatus(boat, latest) {
@@ -2407,6 +2653,155 @@
       enterLiveMode();
     }
 
+    // ── Hot Spots ─────────────────────────────────────────────────────────────
+
+    function toggleHotspotsPanel() {
+      hotspotsPanelOpen = !hotspotsPanelOpen;
+      const panel = document.getElementById("hotspots-panel");
+      const btn = document.getElementById("hotspots-sidebar-toggle");
+      panel.classList.toggle("collapsed", !hotspotsPanelOpen);
+      btn.classList.toggle("active", hotspotsPanelOpen);
+    }
+
+    function openHotspotsSheet() {
+      document.getElementById("hotspots-sheet").classList.add("open");
+      document.getElementById("hotspots-overlay").classList.add("open");
+      renderHotspotSheet();
+    }
+
+    function closeHotspotsSheet() {
+      document.getElementById("hotspots-sheet").classList.remove("open");
+      document.getElementById("hotspots-overlay").classList.remove("open");
+    }
+
+    function _buildHotspotRows(hotspots) {
+      if (hotspots.length === 0) {
+        return '<div class="hs-empty">No hot spots in the last 3 days</div>';
+      }
+      return hotspots.map(hs => {
+        const label = hs.nearest_bank_name || `${hs.lat.toFixed(3)}, ${hs.lon.toFixed(3)}`;
+        const dur = formatHsDuration(hs.duration_minutes);
+        const ended = formatLastSeen(hs.end_time);
+        return `<div class="hs-row" data-lat="${hs.lat}" data-lon="${hs.lon}" data-name="${label}" data-boat="${hs.boat_name}" data-color="${hs.boat_color}" data-dur="${dur}" data-dist="${hs.distance_from_point_loma_nm}" data-ended="${ended}">
+          <div class="hs-row-label">${label}</div>
+          <div class="hs-row-boat"><span class="hs-dot" style="background:${hs.boat_color}"></span>${hs.boat_name} - ${dur}</div>
+          <div class="hs-row-meta">${hs.distance_from_point_loma_nm} nm from PL  |  Ended ${ended}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function _attachHotspotRowHandlers(container) {
+      container.querySelectorAll(".hs-row").forEach(row => {
+        row.addEventListener("click", () => {
+          const lat = parseFloat(row.dataset.lat);
+          const lon = parseFloat(row.dataset.lon);
+          panToHotspot(lat, lon);
+        });
+      });
+    }
+
+    function renderHotspotPanel() {
+      const list = document.getElementById("hotspots-list");
+      if (!list) return;
+      list.innerHTML = _buildHotspotRows(cachedHotspots);
+      _attachHotspotRowHandlers(list);
+    }
+
+    function renderHotspotSheet() {
+      const list = document.getElementById("hotspots-sheet-list");
+      if (!list) return;
+      list.innerHTML = _buildHotspotRows(cachedHotspots);
+      _attachHotspotRowHandlers(list);
+    }
+
+    function renderHotspotMarkers() {
+      for (const { marker } of hotspotLayers) marker.remove();
+      hotspotLayers = [];
+
+      const zoom = map.getZoom();
+
+      for (const hs of cachedHotspots) {
+        const dur = hs.duration_minutes;
+        const radius = Math.max(8, Math.min(20, 8 + (Math.min(dur, 360) - 60) * 12 / 300));
+        const color = hs.boat_color;
+        const label = hs.nearest_bank_name || `${hs.lat.toFixed(3)}, ${hs.lon.toFixed(3)}`;
+        const durStr = formatHsDuration(dur);
+        const ended = formatLastSeen(hs.end_time);
+
+        const marker = L.circleMarker([hs.lat, hs.lon], {
+          radius,
+          fillColor: color,
+          fillOpacity: 0.6,
+          color: color,
+          weight: 2,
+          opacity: 1,
+          zIndexOffset: -5,
+        }).addTo(map);
+
+        marker.bindTooltip(durStr, {
+          permanent: true,
+          direction: "center",
+          className: "hs-duration-label",
+        });
+        if (zoom < 10) {
+          const tt = marker.getTooltip();
+          if (tt) tt.setOpacity(0);
+        }
+
+        marker.bindPopup(`
+          <div style="min-width:160px">
+            <div style="font-weight:700;font-size:14px;margin-bottom:4px">${label}</div>
+            <div style="color:${color};font-size:12px;margin-bottom:4px">${hs.boat_name}</div>
+            <div style="font-size:12px;color:var(--mist)">${durStr}</div>
+            <div style="font-size:11px;color:var(--dim);margin-top:4px">${hs.distance_from_point_loma_nm} nm from PL  |  Ended ${ended}</div>
+          </div>
+        `, { maxWidth: 220 });
+
+        marker.on("click", e => {
+          L.DomEvent.stop(e);
+          map.setView([hs.lat, hs.lon], Math.max(map.getZoom(), 12));
+          marker.openPopup();
+        });
+
+        hotspotLayers.push({ marker, hs });
+      }
+    }
+
+    function panToHotspot(lat, lon) {
+      map.setView([lat, lon], Math.max(map.getZoom(), 12));
+      const layer = hotspotLayers.find(l => l.hs.lat === lat && l.hs.lon === lon);
+      if (layer) layer.marker.openPopup();
+      closeHotspotsSheet();
+    }
+
+    function updateHotspotsCount() {
+      const count = cachedHotspots.length;
+      const label = `Hot Spots (${count})`;
+      const desktopBtn = document.getElementById("hotspots-sidebar-toggle");
+      const mobileBtn = document.getElementById("mobile-hotspots-btn");
+      if (desktopBtn) desktopBtn.textContent = label;
+      if (mobileBtn) mobileBtn.textContent = label;
+    }
+
+    async function fetchHotspots() {
+      try {
+        const res = await fetch("/api/hotspots");
+        if (!res.ok) return;
+        cachedHotspots = await res.json();
+        updateHotspotsCount();
+        renderHotspotPanel();
+        renderHotspotMarkers();
+      } catch {}
+    }
+
+    // Update duration labels when zoom changes
+    map.on("zoomend", () => {
+      const zoom = map.getZoom();
+      for (const { marker } of hotspotLayers) {
+        const tt = marker.getTooltip();
+        if (tt) tt.setOpacity(zoom >= 10 ? 1 : 0);
+      }
+    });
 
     // ── Initial load ──────────────────────────────────────────────────────────
 
@@ -2415,6 +2810,8 @@
     loadWidgets();
     startAutoRefresh();
     setInterval(loadWidgets, 15 * 60 * 1000);
+    fetchHotspots();
+    setInterval(fetchHotspots, 5 * 60 * 1000);
 
     // Fishing banks ON by default
     document.getElementById("fishing-menu-item").classList.add("active");

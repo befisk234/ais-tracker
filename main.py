@@ -1010,6 +1010,81 @@ async def get_boat_status(mmsi: str):
     return _result("Idle")
 
 
+# ---------------------------------------------------------------------------
+# Hot spots endpoint
+# ---------------------------------------------------------------------------
+
+@app.get("/api/hotspots")
+async def get_hotspots():
+    pool = await get_pool()
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(hours=72)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT p.mmsi, p.lat, p.lon, p.speed, p.timestamp,
+                   b.name AS boat_name, b.color AS boat_color
+            FROM positions p
+            JOIN boats b ON b.mmsi = p.mmsi
+            WHERE p.timestamp >= $1 AND p.speed IS NOT NULL AND p.speed < 2.0
+            ORDER BY p.mmsi, p.timestamp ASC
+            """,
+            since,
+        )
+
+    by_mmsi: dict[str, list] = {}
+    for row in rows:
+        by_mmsi.setdefault(row["mmsi"], []).append(dict(row))
+
+    hotspots = []
+    for mmsi, positions in by_mmsi.items():
+        boat_name = positions[0]["boat_name"]
+        boat_color = positions[0]["boat_color"]
+
+        clusters: list[list] = []
+        current: list = [positions[0]]
+
+        for pos in positions[1:]:
+            prev = current[-1]
+            dist = _nm_dist(prev["lat"], prev["lon"], pos["lat"], pos["lon"])
+            gap_min = (pos["timestamp"] - prev["timestamp"]).total_seconds() / 60
+            if dist <= 0.5 and gap_min <= 120:
+                current.append(pos)
+            else:
+                clusters.append(current)
+                current = [pos]
+        clusters.append(current)
+
+        for cluster in clusters:
+            if len(cluster) < 2:
+                continue
+            start_t = cluster[0]["timestamp"]
+            end_t = cluster[-1]["timestamp"]
+            duration_min = (end_t - start_t).total_seconds() / 60
+            if duration_min < 60:
+                continue
+
+            center_lat = sum(p["lat"] for p in cluster) / len(cluster)
+            center_lon = sum(p["lon"] for p in cluster) / len(cluster)
+            dist_pl = _nm_dist(center_lat, center_lon, HOME_LAT, HOME_LON)
+            nearest_bank = _nearest_bank(center_lat, center_lon, max_nm=2.0)
+
+            hotspots.append({
+                "lat": round(center_lat, 5),
+                "lon": round(center_lon, 5),
+                "boat_name": boat_name,
+                "boat_color": boat_color,
+                "start_time": start_t.isoformat(),
+                "end_time": end_t.isoformat(),
+                "duration_minutes": round(duration_min),
+                "nearest_bank_name": nearest_bank,
+                "distance_from_point_loma_nm": round(dist_pl, 1),
+            })
+
+    hotspots.sort(key=lambda h: h["end_time"], reverse=True)
+    return hotspots
+
 
 # ---------------------------------------------------------------------------
 # Notifications API
