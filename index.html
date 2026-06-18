@@ -345,7 +345,7 @@
 
     .bc-body { flex: 1; min-width: 0; }
     .bc-name {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--white);
       white-space: nowrap;
@@ -354,15 +354,15 @@
       line-height: 1.2;
     }
     .bc-status {
-      font-size: 12px;
-      color: var(--mist);
+      font-size: 15px;
+      color: var(--white);
       margin-top: 2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .bc-meta {
-      font-size: 10px;
+      font-size: 12px;
       color: var(--dim);
       margin-top: 2px;
       white-space: nowrap;
@@ -947,6 +947,7 @@
     }
     #trip-banner-exit:hover { background: var(--seafoam); color: var(--navy); }
 
+
     /* ── Mobile ── */
     @media (max-width: 767px) {
       header { padding: 0 12px; height: 48px; }
@@ -1144,6 +1145,7 @@
     <div id="mobile-boat-list" style="padding: 0 8px 8px;"></div>
   </div>
 
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const SAN_DIEGO = [32.7, -117.2];
@@ -1225,6 +1227,9 @@
     let tripViewActive = false;
     let tripViewMmsi = null;
     const tripTrackLayers = [];
+
+    // Boat status cache (mmsi -> status object from /api/boats/{mmsi}/status)
+    let cachedStatusMap = {};
 
     const FISHING_BANKS = [
       // INSHORE — green (within ~30nm of Point Loma)
@@ -1342,10 +1347,11 @@
     function formatLastSeen(timestamp) {
       if (!timestamp) return "No data yet";
       const diffMin = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
-      if (diffMin < 1) return "Just now";
+      if (diffMin < 1) return "just now";
       if (diffMin < 60) return `${diffMin} min ago`;
       const diffHrs = Math.floor(diffMin / 60);
-      if (diffHrs < 24) return `${diffHrs} hr${diffHrs !== 1 ? "s" : ""} ago`;
+      const remMin = diffMin % 60;
+      if (diffHrs < 24) return remMin > 0 ? `${diffHrs}h ${remMin}m ago` : `${diffHrs}h ago`;
       const diffDays = Math.floor(diffHrs / 24);
       return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
     }
@@ -1826,12 +1832,11 @@
 
       // Sort: active (not at dock) first by recency, dock at bottom
       const sorted = [...activeBoats].sort((a, b) => {
-        const la = latestMap[a.mmsi], lb = latestMap[b.mmsi];
-        const statusA = getBoatStatus(a, la);
-        const statusB = getBoatStatus(b, lb);
-        const dockA = statusA.icon === '⚓', dockB = statusB.icon === '⚓';
+        const dockA = cachedStatusMap[a.mmsi]?.is_at_dock ?? false;
+        const dockB = cachedStatusMap[b.mmsi]?.is_at_dock ?? false;
         if (dockA !== dockB) return dockA ? 1 : -1;
-        const tA = la?.timestamp, tB = lb?.timestamp;
+        const tA = latestMap[a.mmsi]?.timestamp;
+        const tB = latestMap[b.mmsi]?.timestamp;
         if (!tA && !tB) return 0;
         if (!tA) return 1;
         if (!tB) return -1;
@@ -1840,11 +1845,15 @@
 
       for (const boat of sorted) {
         const latest = latestMap[boat.mmsi];
-        const status = getBoatStatus(boat, latest);
-        const lastSeenText = latest ? formatLastSeen(latest.timestamp) : "No data";
-        const distText = latest
-          ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) + " nm from Point Loma"
-          : "—";
+        const statusObj = cachedStatusMap[boat.mmsi];
+        const statusText = statusObj?.status ?? "Loading...";
+        const lastSeenText = statusObj?.last_seen
+          ? formatLastSeen(statusObj.last_seen)
+          : (latest ? formatLastSeen(latest.timestamp) : "No data");
+        const distNm = statusObj?.distance_nm != null
+          ? statusObj.distance_nm.toFixed(1)
+          : (latest ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) : null);
+        const distText = distNm != null ? `${distNm} nm from PL` : "—";
 
         const card = document.createElement("div");
         card.className = "boat-card" + (focusedMmsi === boat.mmsi ? " focused" : "");
@@ -1853,9 +1862,9 @@
           <div class="bc-dot" style="background:${boat.color}"></div>
           <div class="bc-body">
             <div class="bc-name">${boat.name}</div>
-            <div class="bc-status">${status.icon} ${status.text}</div>
-            <div class="bc-meta">${distText} &middot; ${lastSeenText}</div>
-            <button class="bc-trips-btn" data-trips>&#128337; Past Trips</button>
+            <div class="bc-status">${statusText}</div>
+            <div class="bc-meta">${distText}  |  Last seen ${lastSeenText}</div>
+            <button class="bc-trips-btn" data-trips>Past Trips</button>
           </div>
           <button class="bc-gear" title="Options">&#9881;</button>
         `;
@@ -1979,11 +1988,10 @@
         })[0];
       }
 
-      const latest = latestMap[boat?.mmsi];
-      const status = getBoatStatus(boat, latest);
       mpDot.style.background = boat.color;
       mpName.textContent = boat.name;
-      mpStatus.textContent = `${status.icon} ${status.text}`;
+      const statusObj = cachedStatusMap[boat?.mmsi];
+      mpStatus.textContent = statusObj?.status ?? "";
     }
 
     function renderMobileBoatList(sorted, latestMap) {
@@ -1992,11 +2000,15 @@
       list.innerHTML = "";
       for (const boat of sorted) {
         const latest = latestMap[boat.mmsi];
-        const status = getBoatStatus(boat, latest);
-        const lastSeenText = latest ? formatLastSeen(latest.timestamp) : "No data";
-        const distText = latest
-          ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) + " nm from Point Loma"
-          : "—";
+        const statusObj = cachedStatusMap[boat.mmsi];
+        const statusText = statusObj?.status ?? "Loading...";
+        const lastSeenText = statusObj?.last_seen
+          ? formatLastSeen(statusObj.last_seen)
+          : (latest ? formatLastSeen(latest.timestamp) : "No data");
+        const distNm = statusObj?.distance_nm != null
+          ? statusObj.distance_nm.toFixed(1)
+          : (latest ? haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1) : null);
+        const distText = distNm != null ? `${distNm} nm from PL` : "—";
 
         const card = document.createElement("div");
         card.className = "boat-card" + (focusedMmsi === boat.mmsi ? " focused" : "");
@@ -2004,9 +2016,9 @@
           <div class="bc-dot" style="background:${boat.color}"></div>
           <div class="bc-body">
             <div class="bc-name">${boat.name}</div>
-            <div class="bc-status">${status.icon} ${status.text}</div>
-            <div class="bc-meta">${distText} &middot; ${lastSeenText}</div>
-            <button class="bc-trips-btn" data-trips>&#128337; Past Trips</button>
+            <div class="bc-status">${statusText}</div>
+            <div class="bc-meta">${distText}  |  Last seen ${lastSeenText}</div>
+            <button class="bc-trips-btn" data-trips>Past Trips</button>
           </div>
         `;
         card.addEventListener("click", e => {
@@ -2128,6 +2140,17 @@
         }
       }
       cachedActiveBoats = boats.filter(b => b.active);
+
+      // Fetch plain-English status for each active boat
+      await Promise.allSettled(
+        cachedActiveBoats.map(async (boat) => {
+          try {
+            const r = await fetch(`/api/boats/${boat.mmsi}/status`);
+            if (r.ok) cachedStatusMap[boat.mmsi] = await r.json();
+          } catch {}
+        })
+      );
+
       applyTrackOpacity();
       renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
       renderMobilePeek(cachedActiveBoats, cachedLatestMap);
@@ -2383,6 +2406,7 @@
       filterActive = false;
       enterLiveMode();
     }
+
 
     // ── Initial load ──────────────────────────────────────────────────────────
 

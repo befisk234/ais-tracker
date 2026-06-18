@@ -41,6 +41,137 @@ stream_task: asyncio.Task | None = None
 HOME_LAT, HOME_LON = 32.6644, -117.2417
 HOME_RADIUS_NM = 2.0
 
+FISHING_BANKS = [
+    {"name": "Point Loma Kelp",         "lat": 32.7083, "lon": -117.2717},
+    {"name": "Bird Rock La Jolla",       "lat": 32.8150, "lon": -117.2762},
+    {"name": "La Jolla Kelp",            "lat": 32.8333, "lon": -117.2917},
+    {"name": "Del Mar Kelp",             "lat": 32.9750, "lon": -117.2833},
+    {"name": "Leucadia Kelp",            "lat": 33.0667, "lon": -117.3108},
+    {"name": "Scripps Canyon",           "lat": 32.8700, "lon": -117.2700},
+    {"name": "Quast Rock",               "lat": 32.8500, "lon": -117.2783},
+    {"name": "Horseshoe Reef",           "lat": 32.8567, "lon": -117.2733},
+    {"name": "Imperial Beach Pipe",      "lat": 32.5800, "lon": -117.1800},
+    {"name": "IB Kelp",                  "lat": 32.5667, "lon": -117.1833},
+    {"name": "Coronado Islands North",   "lat": 32.4167, "lon": -117.2500},
+    {"name": "Coronado Islands Middle",  "lat": 32.4000, "lon": -117.2667},
+    {"name": "Coronado Islands South",   "lat": 32.3833, "lon": -117.2833},
+    {"name": "Rockpile",                 "lat": 32.2833, "lon": -117.1583},
+    {"name": "9 Mile Bank",              "lat": 32.6167, "lon": -117.4833},
+    {"name": "13 Fathom Spot",           "lat": 32.6833, "lon": -117.4500},
+    {"name": "43 Fathom Spot",           "lat": 32.6560, "lon": -117.9688},
+    {"name": "178 Spot",                 "lat": 32.6000, "lon": -117.5667},
+    {"name": "181 Fathom Spot",          "lat": 32.9067, "lon": -117.8833},
+    {"name": "182 Fathom Spot",          "lat": 32.6933, "lon": -117.7067},
+    {"name": "The Bump",                 "lat": 32.8533, "lon": -117.3050},
+    {"name": "The Half",                 "lat": 32.7967, "lon": -117.2917},
+    {"name": "3/4 Spot",                 "lat": 32.7833, "lon": -117.3167},
+    {"name": "The 10",                   "lat": 32.8483, "lon": -117.3033},
+    {"name": "NW Corner",                "lat": 32.4250, "lon": -117.2700},
+    {"name": "The 32",                   "lat": 32.7950, "lon": -117.2933},
+    {"name": "The 270",                  "lat": 32.4500, "lon": -117.2900},
+    {"name": "Widow Rock",               "lat": 32.8200, "lon": -117.2933},
+    {"name": "Jetty Kelp",               "lat": 32.6800, "lon": -117.2400},
+    {"name": "SW Corner",                "lat": 32.3833, "lon": -117.2917},
+    {"name": "Round House",              "lat": 32.7000, "lon": -117.2500},
+    {"name": "Pine Tree",                "lat": 32.7350, "lon": -117.2533},
+    {"name": "Hill Street",              "lat": 32.7600, "lon": -117.2567},
+    {"name": "USS Yukon Wreck",          "lat": 32.6800, "lon": -117.2867},
+    {"name": "5 Tanks",                  "lat": 32.6633, "lon": -117.2517},
+    {"name": "Sub Wreck",                "lat": 32.6800, "lon": -117.2800},
+    {"name": "Zuniga Jetty",             "lat": 32.6783, "lon": -117.2350},
+    {"name": "USS Hogan Wreck",          "lat": 32.6483, "lon": -117.3033},
+    {"name": "International Reef",       "lat": 32.5333, "lon": -117.1833},
+    {"name": "Las Playas Kelp",          "lat": 32.5167, "lon": -117.1283},
+    {"name": "Waterfall",                "lat": 32.4583, "lon": -117.1933},
+    {"name": "Pukey Point",              "lat": 32.4083, "lon": -117.2667},
+    {"name": "30 Mile Bank",             "lat": 32.7917, "lon": -117.7767},
+    {"name": "60 Mile Bank",             "lat": 32.4500, "lon": -117.7833},
+    {"name": "86 Bank",                  "lat": 32.4000, "lon": -118.0500},
+    {"name": "209 Fathom Spot",          "lat": 33.0937, "lon": -117.8713},
+    {"name": "213 Fathom Bank",          "lat": 31.7833, "lon": -117.8833},
+    {"name": "226 Spot",                 "lat": 32.5167, "lon": -117.7333},
+    {"name": "277 Fathom Spot",          "lat": 33.1983, "lon": -118.0787},
+    {"name": "295 Fathom Spot",          "lat": 31.5833, "lon": -117.4000},
+    {"name": "302 Fathom / Kidney",      "lat": 32.4417, "lon": -117.5833},
+    {"name": "312 Spot",                 "lat": 32.4333, "lon": -117.8333},
+    {"name": "371 Bank",                 "lat": 32.7167, "lon": -117.9500},
+    {"name": "390 Bank",                 "lat": 32.0833, "lon": -118.2833},
+    {"name": "425 Fathom Spot",          "lat": 32.2500, "lon": -117.3833},
+    {"name": "499 Spot",                 "lat": 31.9167, "lon": -118.0833},
+    {"name": "Airplane Bank",            "lat": 31.5833, "lon": -117.6500},
+    {"name": "Mushroom",                 "lat": 32.1500, "lon": -117.7000},
+    {"name": "Finger Bank",              "lat": 32.2167, "lon": -117.7833},
+    {"name": "East Pinnacle",            "lat": 32.3000, "lon": -118.4833},
+    {"name": "Hidden Bank",              "lat": 32.4500, "lon": -118.4500},
+    {"name": "Catalina West End",        "lat": 33.4000, "lon": -118.6167},
+    {"name": "San Clemente Island East", "lat": 33.0000, "lon": -118.5167},
+    {"name": "Pyramid Head",             "lat": 32.8153, "lon": -118.3542},
+    {"name": "China Point",              "lat": 32.8000, "lon": -118.4250},
+    {"name": "14 Mile Bank",             "lat": 33.5500, "lon": -118.1500},
+    {"name": "Farnsworth Bank",          "lat": 33.3417, "lon": -118.5167},
+    {"name": "Ship Rock Catalina",       "lat": 33.4750, "lon": -118.5167},
+    {"name": "Cortez Bank",              "lat": 32.4443, "lon": -119.1108},
+    {"name": "Tanner Bank",              "lat": 32.7058, "lon": -119.1335},
+    {"name": "Butterfly Bank",           "lat": 32.3667, "lon": -118.2500},
+    {"name": "1010 Trench",              "lat": 31.5000, "lon": -118.5000},
+]
+
+
+def _bearing_to(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dlambda = math.radians(lon2 - lon1)
+    y = math.sin(dlambda) * math.cos(phi2)
+    x = math.cos(phi1) * math.sin(phi2) - math.sin(phi1) * math.cos(phi2) * math.cos(dlambda)
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360
+
+
+def _compass_dir(bearing: float) -> str:
+    dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    return dirs[round(bearing / 45) % 8]
+
+
+def _fmt_time_ago(ts: datetime) -> str:
+    diff_s = (datetime.now(timezone.utc) - ts).total_seconds()
+    diff_min = int(diff_s / 60)
+    if diff_min < 1:
+        return "just now"
+    if diff_min < 60:
+        return f"{diff_min} min ago"
+    diff_h = diff_min // 60
+    diff_m = diff_min % 60
+    if diff_h < 24:
+        return f"{diff_h}h {diff_m}m ago" if diff_m > 0 else f"{diff_h}h ago"
+    diff_d = diff_h // 24
+    return f"{diff_d} day{'s' if diff_d != 1 else ''} ago"
+
+
+def _fmt_duration(minutes: float) -> str:
+    total = int(minutes)
+    h, m = total // 60, total % 60
+    if h == 0:
+        return f"{m} min"
+    return f"{h}h {m}m" if m > 0 else f"{h}h"
+
+
+def _fmt_eta(hours: float) -> str:
+    total_min = round(hours * 60)
+    if total_min < 60:
+        return f"{total_min} min away"
+    h, m = total_min // 60, total_min % 60
+    return f"{h}h {m}m away" if m > 0 else f"{h}h away"
+
+
+def _nearest_bank(lat: float, lon: float, max_nm: float = 2.0) -> str | None:
+    best: str | None = None
+    best_d = max_nm
+    for bank in FISHING_BANKS:
+        d = _nm_dist(lat, lon, bank["lat"], bank["lon"])
+        if d < best_d:
+            best_d = d
+            best = bank["name"]
+    return best
+
 COLOR_PALETTE = [
     "#E6194B",  # Red
     "#3CB44B",  # Green
@@ -785,6 +916,99 @@ async def get_hot_spots(days: int = 7):
         }
         for r in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# Boat status endpoint
+# ---------------------------------------------------------------------------
+
+@app.get("/api/boats/{mmsi}/status")
+async def get_boat_status(mmsi: str):
+    pool = await get_pool()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT lat, lon, speed, heading, timestamp FROM positions "
+            "WHERE mmsi = $1 AND timestamp >= $2 ORDER BY timestamp DESC LIMIT 500",
+            mmsi, now - timedelta(hours=2),
+        )
+        latest_row = rows[0] if rows else await conn.fetchrow(
+            "SELECT lat, lon, speed, heading, timestamp FROM positions "
+            "WHERE mmsi = $1 ORDER BY timestamp DESC LIMIT 1",
+            mmsi,
+        )
+
+    if not latest_row:
+        return {"status": "No signal", "is_at_dock": False, "last_seen": None, "distance_nm": None}
+
+    lat = latest_row["lat"]
+    lon = latest_row["lon"]
+    speed = latest_row["speed"] if latest_row["speed"] is not None else 0.0
+    heading = latest_row["heading"]
+    ts = latest_row["timestamp"]
+
+    dist_to_pl = _nm_dist(lat, lon, HOME_LAT, HOME_LON)
+    age_h = (now - ts).total_seconds() / 3600
+    time_ago = _fmt_time_ago(ts)
+
+    def _result(status: str, is_at_dock: bool = False) -> dict:
+        return {
+            "status": status,
+            "is_at_dock": is_at_dock,
+            "last_seen": ts.isoformat(),
+            "distance_nm": round(dist_to_pl, 1),
+        }
+
+    if age_h >= 6:
+        return _result(f"No signal {time_ago}")
+
+    if dist_to_pl < 2.0 and speed < 0.5:
+        return _result("At dock", is_at_dock=True)
+
+    if speed > 12:
+        brg_to_pl = _bearing_to(lat, lon, HOME_LAT, HOME_LON)
+        if heading is not None:
+            angle_diff = abs(((heading - brg_to_pl) + 180) % 360 - 180)
+            if angle_diff <= 90:
+                eta = _fmt_eta(dist_to_pl / speed)
+                return _result(f"Returning to harbor, {eta}")
+        compass = _compass_dir(heading if heading is not None else 0.0)
+        return _result(f"Running {compass} at {speed:.0f} kt")
+
+    if speed >= 6:
+        compass = _compass_dir(heading if heading is not None else 0.0)
+        return _result(f"Cruising {compass} at {speed:.1f} kt")
+
+    if speed >= 2 and heading is not None:
+        compass = _compass_dir(heading)
+        return _result(f"Trolling {compass}")
+
+    # speed < 2 kt: find how long the slow period has lasted
+    slow_start = ts
+    for row in rows:
+        spd = row["speed"] if row["speed"] is not None else 0.0
+        if spd < 2.0:
+            slow_start = row["timestamp"]
+        else:
+            break
+
+    slow_min = (now - slow_start).total_seconds() / 60
+
+    if slow_min >= 20:
+        dur = _fmt_duration(slow_min)
+        bank = _nearest_bank(lat, lon, max_nm=1.0)
+        status_str = f"Working a spot for {dur}"
+        if bank:
+            status_str += f" near {bank}"
+        return _result(status_str)
+
+    bank = _nearest_bank(lat, lon, max_nm=2.0)
+    if bank:
+        return _result(f"Slowing down, near {bank}")
+
+    return _result("Idle")
+
 
 
 # ---------------------------------------------------------------------------

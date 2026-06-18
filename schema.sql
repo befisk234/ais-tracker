@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS positions (
 );
 
 CREATE INDEX IF NOT EXISTS positions_mmsi_timestamp_idx ON positions (mmsi, timestamp DESC);
+CREATE INDEX IF NOT EXISTS positions_timestamp_idx ON positions (timestamp);
 
 CREATE TABLE IF NOT EXISTS saved_points (
     id SERIAL PRIMARY KEY,
