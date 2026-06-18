@@ -635,6 +635,15 @@
     }
     .leaflet-tooltip.coord-tip::before { display: none; }
 
+    /* ── Track pulse animation (recent 30 min) ── */
+    @keyframes track-pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    .track-recent {
+      animation: track-pulse 1.5s ease-in-out infinite;
+    }
+
     .leaflet-popup-content-wrapper {
       background: var(--navy2);
       border: 1px solid var(--border);
@@ -1625,19 +1634,104 @@
 
     function makeBoatIcon(color, heading) {
       const deg = (heading != null && heading !== 511) ? heading : 0;
+      const sz = window.innerWidth < 768 ? 28 : 22;
       return L.divIcon({
         className: "",
-        html: `<div style="width:30px;height:30px;transform:rotate(${deg}deg);transform-origin:center">
-          <svg width="30" height="30" viewBox="0 0 30 30">
+        html: `<div style="width:${sz}px;height:${sz}px;transform:rotate(${deg}deg);transform-origin:center">
+          <svg width="${sz}" height="${sz}" viewBox="0 0 30 30">
             <path d="M15 3 L10 27 L15 22 L20 27 Z"
                   fill="${color}" stroke="white" stroke-width="2" stroke-linejoin="round"/>
-            <circle cx="15" cy="15" r="2.5" fill="white" opacity="0.85"/>
           </svg>
         </div>`,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -16],
+        iconSize: [sz, sz],
+        iconAnchor: [sz/2, sz/2],
+        popupAnchor: [0, -sz/2 - 4],
       });
+    }
+
+    function makeAnchorIcon(color) {
+      const sz = window.innerWidth < 768 ? 28 : 22;
+      return L.divIcon({
+        className: "",
+        html: `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="11" fill="${color}" stroke="white" stroke-width="2"/>
+          <circle cx="12" cy="5.5" r="2" fill="none" stroke="white" stroke-width="1.5"/>
+          <line x1="12" y1="7.5" x2="12" y2="20" stroke="white" stroke-width="1.5"/>
+          <line x1="5.5" y1="11" x2="18.5" y2="11" stroke="white" stroke-width="1.5"/>
+          <path d="M5.5 11 Q5.5 19 9.5 20" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M18.5 11 Q18.5 19 14.5 20" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>`,
+        iconSize: [sz, sz],
+        iconAnchor: [sz/2, sz/2],
+        popupAnchor: [0, -sz/2 - 4],
+      });
+    }
+
+    function darkenColor(hex, factor) {
+      const h = hex.replace('#', '');
+      if (h.length !== 6) return hex;
+      const r = Math.min(255, Math.round(parseInt(h.slice(0, 2), 16) * factor));
+      const g = Math.min(255, Math.round(parseInt(h.slice(2, 4), 16) * factor));
+      const b = Math.min(255, Math.round(parseInt(h.slice(4, 6), 16) * factor));
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function getSegmentWeight(speed) {
+      if (speed == null) return 3;
+      if (speed < 2) return 2;
+      if (speed < 12) return 4;
+      return 6;
+    }
+
+    function degreesToCompass(deg) {
+      const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      return dirs[Math.round(deg / 22.5) % 16];
+    }
+
+    function isAtDock(ordered) {
+      if (!ordered || ordered.length === 0) return false;
+      const latest = ordered[ordered.length - 1];
+      if (!latest.timestamp) return latest.speed != null && latest.speed < 0.5;
+      const cutoff = new Date(latest.timestamp).getTime() - 20 * 60 * 1000;
+      const recent = ordered.filter(p => new Date(p.timestamp).getTime() >= cutoff);
+      if (recent.length < 2) return latest.speed != null && latest.speed < 0.5;
+      return recent.every(p => p.speed != null && p.speed < 0.5);
+    }
+
+    function addTrackArrows(ordered, color) {
+      const arrowColor = darkenColor(color, 0.7);
+      const arrows = [];
+      let accDist = 0;
+      let nextAt = 0.5;
+
+      for (let i = 1; i < ordered.length; i++) {
+        const p1 = ordered[i - 1], p2 = ordered[i];
+        const segDist = haversineNm(p1.lat, p1.lon, p2.lat, p2.lon);
+        if (segDist === 0) continue;
+
+        while (accDist + segDist >= nextAt) {
+          const frac = (nextAt - accDist) / segDist;
+          const lat = p1.lat + frac * (p2.lat - p1.lat);
+          const lon = p1.lon + frac * (p2.lon - p1.lon);
+          const bearing = bearingTo(p1.lat, p1.lon, p2.lat, p2.lon);
+
+          const arrowIcon = L.divIcon({
+            className: '',
+            html: `<svg width="10" height="10" viewBox="0 0 10 10" style="transform:rotate(${bearing}deg);display:block;overflow:visible">
+              <path d="M5 0 L10 10 L5 7 L0 10 Z" fill="${arrowColor}" opacity="0.9"/>
+            </svg>`,
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+          });
+
+          const arrowMarker = L.marker([lat, lon], { icon: arrowIcon, interactive: false, keyboard: false });
+          arrowMarker.addTo(map);
+          arrows.push(arrowMarker);
+          nextAt += 0.5;
+        }
+        accDist += segDist;
+      }
+      return arrows;
     }
 
     function makePinIcon() {
@@ -1672,7 +1766,8 @@
     function removeBoatFromMap(mmsi) {
       const layers = boatLayers[mmsi];
       if (!layers) return;
-      layers.polyline.remove();
+      for (const p of (layers.polylines || [])) p.remove();
+      for (const a of (layers.arrows || [])) a.remove();
       layers.marker.remove();
       delete boatLayers[mmsi];
     }
@@ -1682,15 +1777,16 @@
     function applyTrackOpacity() {
       for (const [mmsi, layers] of Object.entries(boatLayers)) {
         const isFocused = focusedMmsi === null || mmsi === focusedMmsi;
-        layers.polyline.setStyle({ opacity: isFocused ? 1 : 0.2 });
-        if (isFocused) {
-          if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
-          layers.marker.setOpacity(1);
-        } else {
-          layers.marker.setOpacity(0.35);
-          if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
+        const opacity = isFocused ? 1 : 0.2;
+        for (const p of (layers.polylines || [])) {
+          p.setStyle({ opacity });
+          if (!map.hasLayer(p)) p.addTo(map);
         }
-        if (!map.hasLayer(layers.polyline)) layers.polyline.addTo(map);
+        for (const a of (layers.arrows || [])) {
+          a.setOpacity(isFocused ? 1 : 0.2);
+        }
+        layers.marker.setOpacity(isFocused ? 1 : 0.35);
+        if (!map.hasLayer(layers.marker)) layers.marker.addTo(map);
       }
     }
 
@@ -1859,65 +1955,99 @@
       if (positions.length === 0) return null;
 
       const ordered = [...positions].reverse();
-      const latLngs = ordered.map(p => [p.lat, p.lon]);
-
       removeBoatFromMap(boat.mmsi);
 
-      const polyline = L.polyline(latLngs, {
-        color: boat.color,
-        weight: 4,
-        opacity: 1,
-      }).addTo(map);
+      // === Speed-proportional + recent-animation polylines ===
+      const cutoff30 = Date.now() - 30 * 60 * 1000;
+      const trackPolylines = [];
 
-      polyline.on("mousemove", e => {
-        const { lat, lng } = e.latlng;
-        const near = nearestPoint(ordered, lat, lng);
-        const tsLine = near?.timestamp ? `<br><span style="color:#7ab">${formatTs(near.timestamp)}</span>` : "";
-        const spdLine = near?.speed != null ? `<br><span style="color:#888">${near.speed.toFixed(1)} kn</span>` : "";
-        coordTip.setLatLng(e.latlng).setContent(`${lat.toFixed(5)}, ${lng.toFixed(5)}${tsLine}${spdLine}`).addTo(map);
-      });
-      polyline.on("mouseout", () => coordTip.remove());
+      if (ordered.length >= 2) {
+        const getSegKey = p => {
+          const w = getSegmentWeight(p.speed);
+          const r = p.timestamp && new Date(p.timestamp).getTime() >= cutoff30 ? 1 : 0;
+          return `${w}:${r}`;
+        };
 
-      // Click on track selects this boat
-      polyline.on("click", e => {
-        L.DomEvent.stop(e);
-        setFocus(boat.mmsi);
-      });
+        const makeSegPolyline = (pts, key) => {
+          if (pts.length < 2) return;
+          const [wStr, rStr] = key.split(':');
+          const pl = L.polyline(pts, {
+            color: boat.color,
+            weight: parseInt(wStr),
+            opacity: 1,
+            className: rStr === '1' ? 'track-recent' : '',
+          }).addTo(map);
+          pl.on("mousemove", e => {
+            const { lat, lng } = e.latlng;
+            const near = nearestPoint(ordered, lat, lng);
+            const tsLine = near?.timestamp ? `<br><span style="color:#7ab">${formatTs(near.timestamp)}</span>` : "";
+            const spdLine = near?.speed != null ? `<br><span style="color:#888">${near.speed.toFixed(1)} kn</span>` : "";
+            coordTip.setLatLng(e.latlng).setContent(`${lat.toFixed(5)}, ${lng.toFixed(5)}${tsLine}${spdLine}`).addTo(map);
+          });
+          pl.on("mouseout", () => coordTip.remove());
+          pl.on("click", e => { L.DomEvent.stop(e); setFocus(boat.mmsi); });
+          trackPolylines.push(pl);
+        };
 
+        let segStart = 0;
+        let segKey = getSegKey(ordered[0]);
+        for (let i = 1; i < ordered.length; i++) {
+          const k = getSegKey(ordered[i]);
+          if (k !== segKey) {
+            makeSegPolyline(ordered.slice(segStart, i + 1).map(p => [p.lat, p.lon]), segKey);
+            segStart = i;
+            segKey = k;
+          }
+        }
+        makeSegPolyline(ordered.slice(segStart).map(p => [p.lat, p.lon]), segKey);
+      }
+
+      // === Direction arrows every 0.5 nm ===
+      const trackArrows = addTrackArrows(ordered, boat.color);
+
+      // === Boat marker ===
       const latest = ordered[ordered.length - 1];
       const distNm = haversineNm(latest.lat, latest.lon, POINT_LOMA[0], POINT_LOMA[1]).toFixed(1);
+      const docked = isAtDock(ordered);
+      const headingDeg = latest.heading != null && latest.heading !== 511 ? latest.heading : null;
+      const headingDir = headingDeg != null ? degreesToCompass(headingDeg) : null;
+      const speedKt = latest.speed != null ? latest.speed.toFixed(1) : null;
 
       const popupContent = document.createElement('div');
       popupContent.className = 'boat-popup';
       popupContent.innerHTML = `
         <div class="bp-name" style="color:${boat.color}">${boat.name}</div>
-        <div class="bp-row"><span class="bp-label">Speed</span><span class="bp-val">${latest.speed?.toFixed(1) ?? '—'} kn</span></div>
-        <div class="bp-row"><span class="bp-label">Heading</span><span class="bp-val">${latest.heading != null && latest.heading !== 511 ? latest.heading + '°' : '—'}</span></div>
+        <div class="bp-row"><span class="bp-label">Speed</span><span class="bp-val">${speedKt ?? '—'} kn</span></div>
+        <div class="bp-row"><span class="bp-label">Heading</span><span class="bp-val">${headingDeg != null ? `${headingDir} (${headingDeg}°)` : '—'}</span></div>
         <div class="bp-row"><span class="bp-label">Dist (Pt Loma)</span><span class="bp-val">${distNm} nm</span></div>
         <div class="bp-row"><span class="bp-label">Last seen</span><span class="bp-val">${formatLastSeen(latest.timestamp)}</span></div>
       `;
 
+      const icon = docked ? makeAnchorIcon(boat.color) : makeBoatIcon(boat.color, latest.heading);
       const marker = L.marker([latest.lat, latest.lon], {
-        icon: makeBoatIcon(boat.color, latest.heading),
+        icon,
         zIndexOffset: 100,
       }).addTo(map).bindPopup(popupContent, { maxWidth: 220 });
 
-      marker.on('mouseover', function() { this.openPopup(); });
+      marker.on('click', e => { L.DomEvent.stop(e); setFocus(boat.mmsi); });
 
-      // Click on marker selects this boat
-      marker.on('click', e => {
-        L.DomEvent.stop(e);
-        setFocus(boat.mmsi);
-      });
+      // Permanent name label; hover swaps content to show heading + speed
+      const nameLabel = boat.name;
+      const hoverLabel = `<b>${boat.name}</b><br>${
+        headingDeg != null ? `Heading ${headingDir} (${headingDeg}°)` : 'Heading —'
+      }<br>${speedKt != null ? `${speedKt} kt` : '— kt'}`;
 
-      marker.bindTooltip(boat.name, {
+      marker.bindTooltip(nameLabel, {
         permanent: true,
-        direction: "top",
-        offset: [0, -16],
-        className: "boat-name-label",
+        direction: 'right',
+        offset: [16, 0],
+        className: 'boat-name-label',
       });
 
-      boatLayers[boat.mmsi] = { polyline, marker, positions: ordered };
+      marker.on('mouseover', () => marker.setTooltipContent(hoverLabel));
+      marker.on('mouseout', () => marker.setTooltipContent(nameLabel));
+
+      boatLayers[boat.mmsi] = { polylines: trackPolylines, arrows: trackArrows, marker, positions: ordered };
       return latest;
     }
 
@@ -2044,9 +2174,12 @@
             boat.color = color;
             const layers = boatLayers[boat.mmsi];
             if (layers) {
-              layers.polyline.setStyle({ color });
+              for (const p of (layers.polylines || [])) p.setStyle({ color });
+              for (const a of (layers.arrows || [])) a.remove();
+              layers.arrows = addTrackArrows(layers.positions, color);
               const latestPos = layers.positions[layers.positions.length - 1];
-              layers.marker.setIcon(makeBoatIcon(color, latestPos?.heading));
+              const docked = isAtDock(layers.positions);
+              layers.marker.setIcon(docked ? makeAnchorIcon(color) : makeBoatIcon(color, latestPos?.heading));
             }
             renderVesselSidebar(cachedActiveBoats, cachedLatestMap);
           } catch {
@@ -2351,7 +2484,7 @@
     // ── Fit all boats ────────────────────────────────────────────────────────
 
     function fitAllBoats() {
-      const polylines = Object.values(boatLayers).map(l => l.polyline);
+      const polylines = Object.values(boatLayers).flatMap(l => l.polylines || []);
       if (polylines.length === 0) return;
       const group = L.featureGroup(polylines);
       map.fitBounds(group.getBounds(), { padding: [50, 50] });
@@ -2631,7 +2764,7 @@
             icon: makeBoatIcon(boat.color, latest.heading),
             zIndexOffset: 100,
           }).addTo(map);
-          mkr.bindTooltip(boat.name, { permanent: true, direction: "top", offset: [0, -16], className: "boat-name-label" });
+          mkr.bindTooltip(boat.name, { permanent: true, direction: "right", offset: [16, 0], className: "boat-name-label" });
           tripTrackLayers.push(poly, mkr);
           map.fitBounds(poly.getBounds(), { padding: [60, 60] });
         }
