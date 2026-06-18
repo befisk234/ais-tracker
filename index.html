@@ -647,19 +647,19 @@
     .leaflet-popup-close-button:hover { color: var(--danger) !important; }
     .leaflet-popup-content { margin: 12px 14px; line-height: 1.5; }
 
-    /* Fishing grounds */
-    .fishing-ground-label {
-      background: rgba(11, 26, 46, 0.9);
+    /* Fishing grounds hover tooltip */
+    .fishing-hover-tip {
+      background: rgba(11, 26, 46, 0.95);
       border: 1px solid var(--brass);
       border-radius: 4px;
       color: var(--brass2);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
       white-space: nowrap;
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
+    .fishing-hover-tip::before { display: none; }
 
     /* Save form */
     .save-form { min-width: 210px; }
@@ -1227,50 +1227,82 @@
     const tripTrackLayers = [];
 
     const FISHING_BANKS = [
-      // INSHORE — green
-      { name: "Point Loma Kelp",     lat: 32.6700, lon: -117.2900, type: "inshore" },
-      { name: "Imperial Beach Pipe", lat: 32.5800, lon: -117.1800, type: "inshore" },
-      { name: "La Jolla Canyon",     lat: 32.8500, lon: -117.3500, type: "inshore" },
-      { name: "Coronado Islands N",  lat: 32.4167, lon: -117.2500, type: "inshore" },
-      { name: "Coronado Islands M",  lat: 32.4000, lon: -117.2667, type: "inshore" },
-      { name: "Coronado Islands S",  lat: 32.3833, lon: -117.2833, type: "inshore" },
-      { name: "The Slide",           lat: 32.4500, lon: -117.3000, type: "inshore" },
-      { name: "178 Spot",            lat: 32.6000, lon: -117.5667, type: "inshore" },
-      { name: "181 Spot",            lat: 32.5833, lon: -117.6667, type: "inshore" },
-      { name: "182 Spot",            lat: 32.6000, lon: -117.6833, type: "inshore" },
-      { name: "209 Spot",            lat: 32.5500, lon: -117.7167, type: "inshore" },
-      { name: "226 Spot",            lat: 32.5167, lon: -117.7333, type: "inshore" },
-      { name: "238 Spot",            lat: 32.5000, lon: -117.7500, type: "inshore" },
-      { name: "270 Spot",            lat: 32.4833, lon: -117.7833, type: "inshore" },
-      { name: "295 Spot",            lat: 32.4667, lon: -117.8000, type: "inshore" },
-      { name: "302 Spot",            lat: 32.4500, lon: -117.8167, type: "inshore" },
-      { name: "312 Spot",            lat: 32.4333, lon: -117.8333, type: "inshore" },
-      { name: "371 Bank",            lat: 32.7167, lon: -117.9500, type: "inshore" },
-      { name: "425 Spot",            lat: 32.6000, lon: -118.0167, type: "inshore" },
-      { name: "43 Fathom",           lat: 32.6500, lon: -117.6500, type: "inshore" },
-      { name: "9 Mile Bank",         lat: 32.6167, lon: -117.4833, type: "inshore" },
-      { name: "13 Fathom",           lat: 32.6833, lon: -117.4500, type: "inshore" },
-      // OFFSHORE — blue
-      { name: "30 Mile Bank",        lat: 32.4167, lon: -117.5500, type: "offshore" },
-      { name: "60 Mile Bank",        lat: 32.4500, lon: -117.7833, type: "offshore" },
-      { name: "86 Bank",             lat: 32.4000, lon: -118.0500, type: "offshore" },
-      { name: "230 Spot",            lat: 32.0500, lon: -117.9333, type: "offshore" },
-      { name: "390 Bank",            lat: 32.0833, lon: -118.2833, type: "offshore" },
-      { name: "499 Spot",            lat: 31.9167, lon: -118.0833, type: "offshore" },
-      { name: "Mushroom",            lat: 32.1500, lon: -117.7000, type: "offshore" },
-      { name: "Finger Bank",         lat: 32.2167, lon: -117.7833, type: "offshore" },
-      { name: "East Pinnacle",       lat: 32.3000, lon: -118.4833, type: "offshore" },
-      { name: "Pukey Point",         lat: 32.6333, lon: -118.4500, type: "offshore" },
-      { name: "Catalina West End",   lat: 33.4000, lon: -118.6167, type: "offshore" },
-      { name: "San Clemente Is. E",  lat: 33.0000, lon: -118.5167, type: "offshore" },
-      { name: "Pyramid Head",        lat: 32.8167, lon: -118.3667, type: "offshore" },
-      // FAR OFFSHORE — purple
-      { name: "Cortez Bank",         lat: 32.4500, lon: -119.1167, type: "far-offshore" },
-      { name: "Tanner Bank",         lat: 32.7167, lon: -119.1500, type: "far-offshore" },
-      { name: "1010 Trench",         lat: 31.5000, lon: -118.5000, type: "far-offshore" },
-      { name: "295/300 Area",        lat: 31.3833, lon: -118.0000, type: "far-offshore" },
-      { name: "San Nicolas Is. S",   lat: 33.1833, lon: -119.5167, type: "far-offshore" },
-      { name: "Butterfly Bank",      lat: 32.3000, lon: -119.4167, type: "far-offshore" },
+      // INSHORE — green (within ~30nm of Point Loma)
+      { name: "Point Loma Kelp",         lat: 32.7083, lon: -117.2717, type: "inshore" },
+      { name: "Bird Rock La Jolla",       lat: 32.8150, lon: -117.2762, type: "inshore" },
+      { name: "La Jolla Kelp",            lat: 32.8333, lon: -117.2917, type: "inshore" },
+      { name: "Del Mar Kelp",             lat: 32.9750, lon: -117.2833, type: "inshore" },
+      { name: "Leucadia Kelp",            lat: 33.0667, lon: -117.3108, type: "inshore" },
+      { name: "Scripps Canyon",           lat: 32.8700, lon: -117.2700, type: "inshore" },
+      { name: "Quast Rock",               lat: 32.8500, lon: -117.2783, type: "inshore" },
+      { name: "Horseshoe Reef",           lat: 32.8567, lon: -117.2733, type: "inshore" },
+      { name: "Imperial Beach Pipe",      lat: 32.5800, lon: -117.1800, type: "inshore" },
+      { name: "IB Kelp",                  lat: 32.5667, lon: -117.1833, type: "inshore" },
+      { name: "Coronado Islands North",   lat: 32.4167, lon: -117.2500, type: "inshore" },
+      { name: "Coronado Islands Middle",  lat: 32.4000, lon: -117.2667, type: "inshore" },
+      { name: "Coronado Islands South",   lat: 32.3833, lon: -117.2833, type: "inshore" },
+      { name: "Rockpile",                 lat: 32.2833, lon: -117.1583, type: "inshore" },
+      { name: "9 Mile Bank",              lat: 32.6167, lon: -117.4833, type: "inshore" },
+      { name: "13 Fathom Spot",           lat: 32.6833, lon: -117.4500, type: "inshore" },
+      { name: "43 Fathom Spot",           lat: 32.6560, lon: -117.9688, type: "inshore" },
+      { name: "178 Spot",                 lat: 32.6000, lon: -117.5667, type: "inshore" },
+      { name: "181 Fathom Spot",          lat: 32.9067, lon: -117.8833, type: "inshore" },
+      { name: "182 Fathom Spot",          lat: 32.6933, lon: -117.7067, type: "inshore" },
+      { name: "The Bump",                 lat: 32.8533, lon: -117.3050, type: "inshore" },
+      { name: "The Half",                 lat: 32.7967, lon: -117.2917, type: "inshore" },
+      { name: "3/4 Spot",                 lat: 32.7833, lon: -117.3167, type: "inshore" },
+      { name: "The 10",                   lat: 32.8483, lon: -117.3033, type: "inshore" },
+      { name: "NW Corner",                lat: 32.4250, lon: -117.2700, type: "inshore" },
+      { name: "The 32",                   lat: 32.7950, lon: -117.2933, type: "inshore" },
+      { name: "The 270",                  lat: 32.4500, lon: -117.2900, type: "inshore" },
+      { name: "Widow Rock",               lat: 32.8200, lon: -117.2933, type: "inshore" },
+      { name: "Jetty Kelp",               lat: 32.6800, lon: -117.2400, type: "inshore" },
+      { name: "SW Corner",                lat: 32.3833, lon: -117.2917, type: "inshore" },
+      { name: "Round House",              lat: 32.7000, lon: -117.2500, type: "inshore" },
+      { name: "Pine Tree",                lat: 32.7350, lon: -117.2533, type: "inshore" },
+      { name: "Hill Street",              lat: 32.7600, lon: -117.2567, type: "inshore" },
+      { name: "USS Yukon Wreck",          lat: 32.6800, lon: -117.2867, type: "inshore" },
+      { name: "5 Tanks",                  lat: 32.6633, lon: -117.2517, type: "inshore" },
+      { name: "Sub Wreck",                lat: 32.6800, lon: -117.2800, type: "inshore" },
+      { name: "Zuniga Jetty",             lat: 32.6783, lon: -117.2350, type: "inshore" },
+      { name: "USS Hogan Wreck",          lat: 32.6483, lon: -117.3033, type: "inshore" },
+      { name: "International Reef",       lat: 32.5333, lon: -117.1833, type: "inshore" },
+      { name: "Las Playas Kelp",          lat: 32.5167, lon: -117.1283, type: "inshore" },
+      { name: "Waterfall",                lat: 32.4583, lon: -117.1933, type: "inshore" },
+      { name: "Pukey Point",              lat: 32.4083, lon: -117.2667, type: "inshore" },
+      // OFFSHORE — blue (30–75nm from Point Loma)
+      { name: "30 Mile Bank",             lat: 32.7917, lon: -117.7767, type: "offshore" },
+      { name: "60 Mile Bank",             lat: 32.4500, lon: -117.7833, type: "offshore" },
+      { name: "86 Bank",                  lat: 32.4000, lon: -118.0500, type: "offshore" },
+      { name: "209 Fathom Spot",          lat: 33.0937, lon: -117.8713, type: "offshore" },
+      { name: "213 Fathom Bank",          lat: 31.7833, lon: -117.8833, type: "offshore" },
+      { name: "226 Spot",                 lat: 32.5167, lon: -117.7333, type: "offshore" },
+      { name: "277 Fathom Spot",          lat: 33.1983, lon: -118.0787, type: "offshore" },
+      { name: "295 Fathom Spot",          lat: 31.5833, lon: -117.4000, type: "offshore" },
+      { name: "302 Fathom / Kidney",      lat: 32.4417, lon: -117.5833, type: "offshore" },
+      { name: "312 Spot",                 lat: 32.4333, lon: -117.8333, type: "offshore" },
+      { name: "371 Bank",                 lat: 32.7167, lon: -117.9500, type: "offshore" },
+      { name: "390 Bank",                 lat: 32.0833, lon: -118.2833, type: "offshore" },
+      { name: "425 Fathom Spot",          lat: 32.2500, lon: -117.3833, type: "offshore" },
+      { name: "499 Spot",                 lat: 31.9167, lon: -118.0833, type: "offshore" },
+      { name: "Airplane Bank",            lat: 31.5833, lon: -117.6500, type: "offshore" },
+      { name: "Mushroom",                 lat: 32.1500, lon: -117.7000, type: "offshore" },
+      { name: "Finger Bank",              lat: 32.2167, lon: -117.7833, type: "offshore" },
+      { name: "East Pinnacle",            lat: 32.3000, lon: -118.4833, type: "offshore" },
+      { name: "Hidden Bank",              lat: 32.4500, lon: -118.4500, type: "offshore" },
+      { name: "Catalina West End",        lat: 33.4000, lon: -118.6167, type: "offshore" },
+      { name: "San Clemente Island East", lat: 33.0000, lon: -118.5167, type: "offshore" },
+      { name: "Pyramid Head",             lat: 32.8153, lon: -118.3542, type: "offshore" },
+      { name: "China Point",              lat: 32.8000, lon: -118.4250, type: "offshore" },
+      { name: "14 Mile Bank",             lat: 33.5500, lon: -118.1500, type: "offshore" },
+      { name: "Farnsworth Bank",          lat: 33.3417, lon: -118.5167, type: "offshore" },
+      { name: "Ship Rock Catalina",       lat: 33.4750, lon: -118.5167, type: "offshore" },
+      // FAR OFFSHORE — purple (75–100nm from Point Loma)
+      { name: "Cortez Bank",              lat: 32.4443, lon: -119.1108, type: "far-offshore" },
+      { name: "Tanner Bank",              lat: 32.7058, lon: -119.1335, type: "far-offshore" },
+      { name: "Butterfly Bank",           lat: 32.3667, lon: -118.2500, type: "far-offshore" },
+      { name: "1010 Trench",              lat: 31.5000, lon: -118.5000, type: "far-offshore" },
+      // San Nicolas Island South excluded — ~119nm from Point Loma
     ];
 
     // ── Utilities ───────────────────────────────────────────────────────────
@@ -1282,6 +1314,14 @@
       const dλ = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(dλ / 2) ** 2;
       return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function bearingTo(lat1, lon1, lat2, lon2) {
+      const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+      const dλ = (lon2 - lon1) * Math.PI / 180;
+      const y = Math.sin(dλ) * Math.cos(φ2);
+      const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dλ);
+      return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
     }
 
     function setStatus(state, text) {
@@ -1362,15 +1402,18 @@
       });
     }
 
-    function makeBankIcon(type) {
+    function makeBankIcon(type, name) {
       const fill = type === "inshore" ? "#22c55e" : type === "offshore" ? "#3b82f6" : "#a855f7";
       return L.divIcon({
         className: "",
-        html: `<svg width="10" height="10" viewBox="0 0 10 10">
-          <circle cx="5" cy="5" r="4" fill="${fill}" stroke="white" stroke-width="1.5"/>
-        </svg>`,
-        iconSize: [10, 10],
-        iconAnchor: [5, 5],
+        html: `<div style="position:relative;width:8px;height:8px">
+          <svg width="8" height="8" viewBox="0 0 8 8" style="display:block">
+            <circle cx="4" cy="4" r="3" fill="${fill}" stroke="white" stroke-width="1.5"/>
+          </svg>
+          <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:white;border:1px solid #444;border-radius:3px;padding:1px 4px;font-size:10px;font-weight:600;color:#1a1a2e;white-space:nowrap;pointer-events:none;line-height:1.4;box-shadow:0 1px 3px rgba(0,0,0,0.25)">${name}</div>
+        </div>`,
+        iconSize: [8, 8],
+        iconAnchor: [4, 4],
       });
     }
 
@@ -1440,15 +1483,21 @@
     // ── Fishing banks ────────────────────────────────────────────────────────
 
     function showFishingBanks() {
+      const PLlat = POINT_LOMA[0], PLlon = POINT_LOMA[1];
+      const compass = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
       for (const bank of FISHING_BANKS) {
+        const dist = haversineNm(PLlat, PLlon, bank.lat, bank.lon);
+        if (dist > 100) continue;
+        const brg = bearingTo(PLlat, PLlon, bank.lat, bank.lon);
+        const dir = compass[Math.round(brg / 22.5) % 16];
         const marker = L.marker([bank.lat, bank.lon], {
-          icon: makeBankIcon(bank.type),
+          icon: makeBankIcon(bank.type, bank.name),
           zIndexOffset: -20,
         }).addTo(map);
-        marker.bindTooltip(bank.name, {
-          permanent: true, direction: "top", offset: [0, -7],
-          className: "fishing-ground-label",
-        });
+        marker.bindTooltip(
+          `<b>${bank.name}</b><br>${dist.toFixed(1)} nm · ${Math.round(brg)}° ${dir} of Point Loma`,
+          { permanent: false, direction: "top", offset: [0, -10], className: "fishing-hover-tip" }
+        );
         fishingGroundLayers.push(marker);
       }
     }
