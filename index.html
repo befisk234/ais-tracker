@@ -1677,10 +1677,10 @@
     }
 
     function getSegmentWeight(speed) {
-      if (speed == null) return 3;
+      if (speed == null) return 2.5;
       if (speed < 2) return 2;
-      if (speed < 12) return 4;
-      return 6;
+      if (speed < 12) return 2.5;
+      return 3;
     }
 
     function degreesToCompass(deg) {
@@ -2758,7 +2758,7 @@
         const positions = await res.json();
         if (positions.length > 0) {
           const latLngs = positions.map(p => [p.lat, p.lon]);
-          const poly = L.polyline(latLngs, { color: boat.color, weight: 4, opacity: 1 }).addTo(map);
+          const poly = L.polyline(latLngs, { color: boat.color, weight: 2.5, opacity: 1 }).addTo(map);
           const latest = positions[positions.length - 1];
           const mkr = L.marker([latest.lat, latest.lon], {
             icon: makeBoatIcon(boat.color, latest.heading),
