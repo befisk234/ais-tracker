@@ -870,6 +870,83 @@
     }
     #sheet-overlay.open { display: block; }
 
+    /* ── Past Trips button in boat card ── */
+    .bc-trips-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--mist);
+      font-size: 11px;
+      padding: 3px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      margin-top: 5px;
+      display: block;
+      text-align: left;
+    }
+    .bc-trips-btn:hover { color: var(--brass2); border-color: var(--brass); }
+
+    /* ── Trip history panel ── */
+    #trip-panel {
+      position: fixed;
+      top: 48px;
+      left: 16px;
+      z-index: 1200;
+      background: var(--navy2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      width: 300px;
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+      display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    #trip-panel.open { display: block; }
+
+    .trip-row {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background 0.12s;
+    }
+    .trip-row:last-child { border-bottom: none; }
+    .trip-row:hover { background: var(--navy3); }
+    .trip-row-date { font-size: 13px; font-weight: 600; color: var(--white); }
+    .trip-row-detail { font-size: 12px; color: var(--mist); margin-top: 3px; }
+    .trip-row-ongoing { font-size: 11px; color: var(--seafoam); margin-top: 2px; }
+
+    /* ── Trip view banner ── */
+    #trip-banner {
+      position: fixed;
+      top: 48px;
+      left: 0;
+      right: 0;
+      z-index: 1050;
+      background: #1a0d30;
+      border-bottom: 2px solid #a855f7;
+      padding: 6px 14px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    #trip-banner.visible { display: flex; }
+    #trip-banner-text { font-size: 13px; color: #d8b4fe; font-weight: 600; flex: 1; }
+    #trip-banner-exit {
+      background: transparent;
+      color: var(--seafoam);
+      border: 1px solid var(--seafoam);
+      border-radius: 4px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #trip-banner-exit:hover { background: var(--seafoam); color: var(--navy); }
+
     /* ── Mobile ── */
     @media (max-width: 767px) {
       header { padding: 0 12px; height: 48px; }
@@ -941,7 +1018,7 @@
       <div id="more-menu-dropdown">
         <div class="more-item" onclick="fitAllBoats(); closeMoreMenu()">&#8862; Fit All Boats</div>
         <div class="more-item" onclick="map.setView(SAN_DIEGO, 11); closeMoreMenu()">&#8982; San Diego</div>
-        <div class="more-item" id="fishing-menu-item" onclick="toggleFishingGrounds(); closeMoreMenu()">&#127920; Fishing Grounds</div>
+        <div class="more-item" id="fishing-menu-item" onclick="toggleFishingGrounds(); closeMoreMenu()">&#127919; Fishing Banks</div>
       </div>
     </div>
   </div>
@@ -1044,6 +1121,21 @@
     </div>
   </div>
 
+  <!-- Trip history panel -->
+  <div id="trip-panel">
+    <div class="panel-header">
+      <h2>Past Trips — <span id="trip-panel-boat" style="color:var(--brass2)"></span></h2>
+      <button class="panel-close" onclick="closeTripPanel()" title="Close">&times;</button>
+    </div>
+    <div id="trip-list"></div>
+  </div>
+
+  <!-- Trip view banner (shown when viewing a historical trip) -->
+  <div id="trip-banner">
+    <span id="trip-banner-text"></span>
+    <button id="trip-banner-exit" onclick="exitTripView()">&#215; Exit</button>
+  </div>
+
   <!-- Mobile bottom sheet -->
   <div id="sheet-overlay" onclick="closeMobileSheet()"></div>
   <div id="mobile-sheet">
@@ -1124,17 +1216,61 @@
     let cachedLatestMap = {};
     let cachedActiveBoats = [];
     let refreshInterval = null;
-    let fishingGroundsVisible = false;
+    let fishingGroundsVisible = true;
     const fishingGroundLayers = [];
     const coordTip = L.tooltip({ className: "coord-tip", direction: "right", offset: [14, 0] });
     let sidebarCollapsed = true;  // starts collapsed
 
-    const FISHING_GROUNDS = [
-      { name: "43 Fathom Bank",  lat: 32.55,  lon: -117.48 },
-      { name: "9 Mile Bank",     lat: 32.58,  lon: -117.47 },
-      { name: "60 Mile Bank",    lat: 31.88,  lon: -118.58 },
-      { name: "Cortez Bank",     lat: 31.68,  lon: -119.05 },
-      { name: "Tanner Bank",     lat: 32.70,  lon: -119.08 },
+    // Trip view state
+    let tripViewActive = false;
+    let tripViewMmsi = null;
+    const tripTrackLayers = [];
+
+    const FISHING_BANKS = [
+      // INSHORE — green
+      { name: "Point Loma Kelp",     lat: 32.6700, lon: -117.2900, type: "inshore" },
+      { name: "Imperial Beach Pipe", lat: 32.5800, lon: -117.1800, type: "inshore" },
+      { name: "La Jolla Canyon",     lat: 32.8500, lon: -117.3500, type: "inshore" },
+      { name: "Coronado Islands N",  lat: 32.4167, lon: -117.2500, type: "inshore" },
+      { name: "Coronado Islands M",  lat: 32.4000, lon: -117.2667, type: "inshore" },
+      { name: "Coronado Islands S",  lat: 32.3833, lon: -117.2833, type: "inshore" },
+      { name: "The Slide",           lat: 32.4500, lon: -117.3000, type: "inshore" },
+      { name: "178 Spot",            lat: 32.6000, lon: -117.5667, type: "inshore" },
+      { name: "181 Spot",            lat: 32.5833, lon: -117.6667, type: "inshore" },
+      { name: "182 Spot",            lat: 32.6000, lon: -117.6833, type: "inshore" },
+      { name: "209 Spot",            lat: 32.5500, lon: -117.7167, type: "inshore" },
+      { name: "226 Spot",            lat: 32.5167, lon: -117.7333, type: "inshore" },
+      { name: "238 Spot",            lat: 32.5000, lon: -117.7500, type: "inshore" },
+      { name: "270 Spot",            lat: 32.4833, lon: -117.7833, type: "inshore" },
+      { name: "295 Spot",            lat: 32.4667, lon: -117.8000, type: "inshore" },
+      { name: "302 Spot",            lat: 32.4500, lon: -117.8167, type: "inshore" },
+      { name: "312 Spot",            lat: 32.4333, lon: -117.8333, type: "inshore" },
+      { name: "371 Bank",            lat: 32.7167, lon: -117.9500, type: "inshore" },
+      { name: "425 Spot",            lat: 32.6000, lon: -118.0167, type: "inshore" },
+      { name: "43 Fathom",           lat: 32.6500, lon: -117.6500, type: "inshore" },
+      { name: "9 Mile Bank",         lat: 32.6167, lon: -117.4833, type: "inshore" },
+      { name: "13 Fathom",           lat: 32.6833, lon: -117.4500, type: "inshore" },
+      // OFFSHORE — blue
+      { name: "30 Mile Bank",        lat: 32.4167, lon: -117.5500, type: "offshore" },
+      { name: "60 Mile Bank",        lat: 32.4500, lon: -117.7833, type: "offshore" },
+      { name: "86 Bank",             lat: 32.4000, lon: -118.0500, type: "offshore" },
+      { name: "230 Spot",            lat: 32.0500, lon: -117.9333, type: "offshore" },
+      { name: "390 Bank",            lat: 32.0833, lon: -118.2833, type: "offshore" },
+      { name: "499 Spot",            lat: 31.9167, lon: -118.0833, type: "offshore" },
+      { name: "Mushroom",            lat: 32.1500, lon: -117.7000, type: "offshore" },
+      { name: "Finger Bank",         lat: 32.2167, lon: -117.7833, type: "offshore" },
+      { name: "East Pinnacle",       lat: 32.3000, lon: -118.4833, type: "offshore" },
+      { name: "Pukey Point",         lat: 32.6333, lon: -118.4500, type: "offshore" },
+      { name: "Catalina West End",   lat: 33.4000, lon: -118.6167, type: "offshore" },
+      { name: "San Clemente Is. E",  lat: 33.0000, lon: -118.5167, type: "offshore" },
+      { name: "Pyramid Head",        lat: 32.8167, lon: -118.3667, type: "offshore" },
+      // FAR OFFSHORE — purple
+      { name: "Cortez Bank",         lat: 32.4500, lon: -119.1167, type: "far-offshore" },
+      { name: "Tanner Bank",         lat: 32.7167, lon: -119.1500, type: "far-offshore" },
+      { name: "1010 Trench",         lat: 31.5000, lon: -118.5000, type: "far-offshore" },
+      { name: "295/300 Area",        lat: 31.3833, lon: -118.0000, type: "far-offshore" },
+      { name: "San Nicolas Is. S",   lat: 33.1833, lon: -119.5167, type: "far-offshore" },
+      { name: "Butterfly Bank",      lat: 32.3000, lon: -119.4167, type: "far-offshore" },
     ];
 
     // ── Utilities ───────────────────────────────────────────────────────────
@@ -1226,14 +1362,15 @@
       });
     }
 
-    function makeFishingGroundIcon() {
+    function makeBankIcon(type) {
+      const fill = type === "inshore" ? "#22c55e" : type === "offshore" ? "#3b82f6" : "#a855f7";
       return L.divIcon({
         className: "",
-        html: `<svg width="12" height="12" viewBox="0 0 12 12">
-          <circle cx="6" cy="6" r="5" fill="#c9a22740" stroke="#c9a227" stroke-width="1.5"/>
+        html: `<svg width="10" height="10" viewBox="0 0 10 10">
+          <circle cx="5" cy="5" r="4" fill="${fill}" stroke="white" stroke-width="1.5"/>
         </svg>`,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6],
+        iconSize: [10, 10],
+        iconAnchor: [5, 5],
       });
     }
 
@@ -1300,25 +1437,27 @@
 
     document.addEventListener("click", () => closeMoreMenu());
 
-    // ── Fishing grounds ──────────────────────────────────────────────────────
+    // ── Fishing banks ────────────────────────────────────────────────────────
+
+    function showFishingBanks() {
+      for (const bank of FISHING_BANKS) {
+        const marker = L.marker([bank.lat, bank.lon], {
+          icon: makeBankIcon(bank.type),
+          zIndexOffset: -20,
+        }).addTo(map);
+        marker.bindTooltip(bank.name, {
+          permanent: true, direction: "top", offset: [0, -7],
+          className: "fishing-ground-label",
+        });
+        fishingGroundLayers.push(marker);
+      }
+    }
 
     function toggleFishingGrounds() {
       fishingGroundsVisible = !fishingGroundsVisible;
-      const item = document.getElementById("fishing-menu-item");
-      item.classList.toggle("active", fishingGroundsVisible);
-
+      document.getElementById("fishing-menu-item").classList.toggle("active", fishingGroundsVisible);
       if (fishingGroundsVisible) {
-        for (const ground of FISHING_GROUNDS) {
-          const marker = L.marker([ground.lat, ground.lon], {
-            icon: makeFishingGroundIcon(),
-            zIndexOffset: -20,
-          }).addTo(map);
-          marker.bindTooltip(ground.name, {
-            permanent: true, direction: "top", offset: [0, -8],
-            className: "fishing-ground-label",
-          });
-          fishingGroundLayers.push(marker);
-        }
+        showFishingBanks();
       } else {
         for (const m of fishingGroundLayers) m.remove();
         fishingGroundLayers.length = 0;
@@ -1339,6 +1478,7 @@
     // ── Date bar UI ──────────────────────────────────────────────────────────
 
     function updateDateBarUI() {
+      if (tripViewActive) return;
       const bar = document.getElementById("date-bar");
       const liveModeBtn = document.getElementById("live-mode-btn");
       const vesselName = document.getElementById("date-bar-vessel-name");
@@ -1666,12 +1806,15 @@
             <div class="bc-name">${boat.name}</div>
             <div class="bc-status">${status.icon} ${status.text}</div>
             <div class="bc-meta">${distText} &middot; ${lastSeenText}</div>
+            <button class="bc-trips-btn" data-trips>&#128337; Past Trips</button>
           </div>
           <button class="bc-gear" title="Options">&#9881;</button>
         `;
 
         const dotEl = card.querySelector(".bc-dot");
         const gearBtn = card.querySelector(".bc-gear");
+        const tripsBtn = card.querySelector("[data-trips]");
+        tripsBtn.addEventListener("click", e => { e.stopPropagation(); openTripPanel(boat); });
 
         // Card click: focus/unfocus
         card.addEventListener("click", e => {
@@ -1814,13 +1957,20 @@
             <div class="bc-name">${boat.name}</div>
             <div class="bc-status">${status.icon} ${status.text}</div>
             <div class="bc-meta">${distText} &middot; ${lastSeenText}</div>
+            <button class="bc-trips-btn" data-trips>&#128337; Past Trips</button>
           </div>
         `;
-        card.addEventListener("click", () => {
+        card.addEventListener("click", e => {
+          if (e.target.closest("[data-trips]")) return;
           setFocus(boat.mmsi);
           closeMobileSheet();
           const layer = boatLayers[boat.mmsi];
           if (layer?.marker) map.setView(layer.marker.getLatLng(), 13);
+        });
+        card.querySelector("[data-trips]").addEventListener("click", e => {
+          e.stopPropagation();
+          closeMobileSheet();
+          openTripPanel(boat);
         });
         list.appendChild(card);
       }
@@ -1903,7 +2053,7 @@
     // ── Main refresh ─────────────────────────────────────────────────────────
 
     async function refresh() {
-      if (filterActive) return;
+      if (filterActive || tripViewActive) return;
       try {
         const res = await fetch("/api/boats");
         boats = await res.json();
@@ -2088,6 +2238,103 @@
       await Promise.allSettled([loadTide(), loadBuoyData()]);
     }
 
+    // ── Trip history ─────────────────────────────────────────────────────────
+
+    async function openTripPanel(boat) {
+      document.querySelectorAll(".bc-menu").forEach(m => m.remove());
+      closeOpenColorPicker();
+      document.getElementById("trip-panel-boat").textContent = boat.name;
+      document.getElementById("trip-list").innerHTML =
+        '<div style="color:var(--dim);font-size:13px;padding:8px 0">Loading…</div>';
+      document.getElementById("trip-panel").classList.add("open");
+
+      try {
+        const res = await fetch(`/api/trips/${boat.mmsi}`);
+        const trips = await res.json();
+        renderTripList(trips, boat);
+      } catch {
+        document.getElementById("trip-list").innerHTML =
+          '<div style="color:var(--danger);font-size:13px;padding:8px 0">Failed to load trips</div>';
+      }
+    }
+
+    function renderTripList(trips, boat) {
+      const list = document.getElementById("trip-list");
+      if (trips.length === 0) {
+        list.innerHTML =
+          '<div style="color:var(--dim);font-size:13px;padding:8px 0">No trips found yet — trips require 2+ hours away from dock</div>';
+        return;
+      }
+      list.innerHTML = "";
+      for (const trip of trips) {
+        const startDate = new Date(trip.start_time);
+        const dateStr = startDate.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        const h = Math.floor(trip.duration_hours);
+        const m = Math.round((trip.duration_hours - h) * 60);
+        const durStr = h > 0 ? `${h}h ${m > 0 ? m + "m" : ""}`.trim() : `${m}m`;
+
+        const row = document.createElement("div");
+        row.className = "trip-row";
+        row.innerHTML = `
+          <div class="trip-row-date">${dateStr}</div>
+          <div class="trip-row-detail">Out ${durStr} &mdash; Max ${trip.max_distance_nm} nm &mdash; Track ${trip.total_track_nm} nm</div>
+          ${trip.end_time === null ? '<div class="trip-row-ongoing">&#9679; Ongoing</div>' : ""}
+        `;
+        row.addEventListener("click", () => showTripTrack(boat, trip));
+        list.appendChild(row);
+      }
+    }
+
+    async function showTripTrack(boat, trip) {
+      closeTripPanel();
+      tripViewActive = true;
+      tripViewMmsi = boat.mmsi;
+      stopAutoRefresh();
+
+      // Hide date bar, clear all existing boat layers
+      document.getElementById("date-bar").classList.remove("visible");
+      for (const mmsi of Object.keys(boatLayers)) removeBoatFromMap(mmsi);
+
+      // Show trip banner
+      const startDate = new Date(trip.start_time);
+      const dateStr = startDate.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+      document.getElementById("trip-banner-text").textContent =
+        `Viewing past trip: ${boat.name}, ${dateStr}`;
+      document.getElementById("trip-banner").classList.add("visible");
+
+      try {
+        const res = await fetch(`/api/trips/${boat.mmsi}/${trip.id}/track`);
+        const positions = await res.json();
+        if (positions.length > 0) {
+          const latLngs = positions.map(p => [p.lat, p.lon]);
+          const poly = L.polyline(latLngs, { color: boat.color, weight: 4, opacity: 1 }).addTo(map);
+          const latest = positions[positions.length - 1];
+          const mkr = L.marker([latest.lat, latest.lon], {
+            icon: makeBoatIcon(boat.color, latest.heading),
+            zIndexOffset: 100,
+          }).addTo(map);
+          mkr.bindTooltip(boat.name, { permanent: true, direction: "top", offset: [0, -16], className: "boat-name-label" });
+          tripTrackLayers.push(poly, mkr);
+          map.fitBounds(poly.getBounds(), { padding: [60, 60] });
+        }
+      } catch {}
+    }
+
+    function closeTripPanel() {
+      document.getElementById("trip-panel").classList.remove("open");
+    }
+
+    function exitTripView() {
+      tripViewActive = false;
+      tripViewMmsi = null;
+      for (const layer of tripTrackLayers) layer.remove();
+      tripTrackLayers.length = 0;
+      document.getElementById("trip-banner").classList.remove("visible");
+      focusedMmsi = null;
+      filterActive = false;
+      enterLiveMode();
+    }
+
     // ── Initial load ──────────────────────────────────────────────────────────
 
     refresh();
@@ -2095,6 +2342,10 @@
     loadWidgets();
     startAutoRefresh();
     setInterval(loadWidgets, 15 * 60 * 1000);
+
+    // Fishing banks ON by default
+    document.getElementById("fishing-menu-item").classList.add("active");
+    showFishingBanks();
   </script>
 </body>
 </html>

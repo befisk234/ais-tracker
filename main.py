@@ -156,6 +156,18 @@ def _nm_dist(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * R * math.asin(math.sqrt(a))
 
 
+async def cleanup_old_positions(pool: asyncpg.Pool) -> None:
+    while True:
+        await asyncio.sleep(3600)
+        try:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=10)
+            result = await pool.execute("DELETE FROM positions WHERE timestamp < $1", cutoff)
+            n = int(result.split()[-1])
+            log.info("Deleted %d positions older than 10 days", n)
+        except Exception:
+            log.exception("Error during position cleanup")
+
+
 async def ais_stream_task(pool: asyncpg.Pool) -> None:
     uri = "wss://stream.aisstream.io/v0/stream"
     boat_home_state: dict[str, bool] = {}
@@ -251,6 +263,7 @@ async def lifespan(app: FastAPI):
     global db_pool, tracked_mmsis, stream_task
     db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
     await init_db(db_pool)
+    cleanup_task: asyncio.Task | None = None
 
     async with db_pool.acquire() as conn:
         rows = await conn.fetch("SELECT mmsi, name FROM boats WHERE active = true")
@@ -258,26 +271,34 @@ async def lifespan(app: FastAPI):
 
         # Self-healing color migration: runs every startup, ensures each boat has
         # its palette-assigned color so duplicates can never persist.
-        all_boats = await conn.fetch("SELECT mmsi FROM boats ORDER BY created_at")
+        all_boats = await conn.fetch("SELECT mmsi, name FROM boats ORDER BY created_at")
         for i, row in enumerate(all_boats):
+            color = COLOR_PALETTE[i % len(COLOR_PALETTE)]
             await conn.execute(
                 "UPDATE boats SET color = $1 WHERE mmsi = $2",
-                COLOR_PALETTE[i % len(COLOR_PALETTE)], row["mmsi"],
+                color, row["mmsi"],
             )
-        if all_boats:
-            log.info("Color migration: assigned palette colors to %d boat(s)", len(all_boats))
+            log.info("Assigned %s to boat %s", color, row["name"])
+
+        # Run position cleanup once on startup
+        cutoff = datetime.now(timezone.utc) - timedelta(days=10)
+        result = await conn.execute("DELETE FROM positions WHERE timestamp < $1", cutoff)
+        n = int(result.split()[-1])
+        log.info("Deleted %d positions older than 10 days", n)
 
     stream_task = asyncio.create_task(ais_stream_task(db_pool))
+    cleanup_task = asyncio.create_task(cleanup_old_positions(db_pool))
     log.info("AIS stream task started, tracking %d boat(s)", len(tracked_mmsis))
 
     yield
 
-    if stream_task:
-        stream_task.cancel()
-        try:
-            await stream_task
-        except asyncio.CancelledError:
-            pass
+    for task in (stream_task, cleanup_task):
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
     await db_pool.close()
 
 
@@ -588,6 +609,102 @@ async def get_trips(mmsi: str):
             })
 
     return list(reversed(trips))
+
+
+async def _compute_trips_v2(mmsi: str, pool: asyncpg.Pool) -> list[dict]:
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT lat, lon, speed, heading, timestamp FROM positions "
+            "WHERE mmsi = $1 ORDER BY timestamp ASC",
+            mmsi,
+        )
+
+    if not rows:
+        return []
+
+    MIN_TRIP_HOURS = 2.0
+    trips: list[dict] = []
+    trip_start: datetime | None = None
+    trip_positions: list[dict] = []
+
+    for row in rows:
+        dist = _nm_dist(row["lat"], row["lon"], HOME_LAT, HOME_LON)
+        at_home = dist < HOME_RADIUS_NM
+
+        if not at_home:
+            if trip_start is None:
+                trip_start = row["timestamp"]
+                trip_positions = []
+            trip_positions.append(dict(row))
+        else:
+            if trip_start is not None and trip_positions:
+                trip_end = trip_positions[-1]["timestamp"]
+                duration_h = (trip_end - trip_start).total_seconds() / 3600
+                if duration_h >= MIN_TRIP_HOURS:
+                    max_dist = max(_nm_dist(p["lat"], p["lon"], HOME_LAT, HOME_LON) for p in trip_positions)
+                    total_dist = sum(
+                        _nm_dist(trip_positions[i]["lat"], trip_positions[i]["lon"],
+                                 trip_positions[i-1]["lat"], trip_positions[i-1]["lon"])
+                        for i in range(1, len(trip_positions))
+                    )
+                    trips.append({
+                        "id": len(trips),
+                        "start_time": trip_start.isoformat(),
+                        "end_time": trip_end.isoformat(),
+                        "duration_hours": round(duration_h, 2),
+                        "max_distance_nm": round(max_dist, 1),
+                        "total_track_nm": round(total_dist, 1),
+                    })
+                trip_start = None
+                trip_positions = []
+
+    if trip_start and trip_positions:
+        trip_end = trip_positions[-1]["timestamp"]
+        duration_h = (trip_end - trip_start).total_seconds() / 3600
+        if duration_h >= MIN_TRIP_HOURS:
+            max_dist = max(_nm_dist(p["lat"], p["lon"], HOME_LAT, HOME_LON) for p in trip_positions)
+            total_dist = sum(
+                _nm_dist(trip_positions[i]["lat"], trip_positions[i]["lon"],
+                         trip_positions[i-1]["lat"], trip_positions[i-1]["lon"])
+                for i in range(1, len(trip_positions))
+            )
+            trips.append({
+                "id": len(trips),
+                "start_time": trip_start.isoformat(),
+                "end_time": None,
+                "duration_hours": round(duration_h, 2),
+                "max_distance_nm": round(max_dist, 1),
+                "total_track_nm": round(total_dist, 1),
+            })
+
+    return trips
+
+
+@app.get("/api/trips/{mmsi}")
+async def get_trips_by_mmsi(mmsi: str):
+    pool = await get_pool()
+    trips = await _compute_trips_v2(mmsi, pool)
+    return list(reversed(trips))
+
+
+@app.get("/api/trips/{mmsi}/{trip_id}/track")
+async def get_trip_track_by_id(mmsi: str, trip_id: int):
+    pool = await get_pool()
+    trips = await _compute_trips_v2(mmsi, pool)
+    trip = next((t for t in trips if t["id"] == trip_id), None)
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+
+    start_dt = datetime.fromisoformat(trip["start_time"])
+    end_dt = datetime.fromisoformat(trip["end_time"]) if trip["end_time"] else datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT lat, lon, speed, heading, timestamp FROM positions "
+            "WHERE mmsi = $1 AND timestamp BETWEEN $2 AND $3 ORDER BY timestamp ASC",
+            mmsi, start_dt, end_dt,
+        )
+    return [dict(r) for r in rows]
 
 
 @app.get("/api/boats/{mmsi}/trips/{trip_index}/gpx")
